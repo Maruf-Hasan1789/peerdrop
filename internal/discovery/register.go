@@ -9,11 +9,11 @@ import (
 )
 
 func (d *Discovery) Register(ctx context.Context, port int) error {
-	fmt.Printf("My Port: %v\n", port)
 	log.Printf("Started registering")
+	serviceName := fmt.Sprintf("peerdrop-%s-%d", hostname(), port)
 
 	server, err := zeroconf.Register(
-		"PeerDrop-"+hostname(),
+		serviceName,
 		"_peerdrop._tcp",
 		"local.",
 		port,
