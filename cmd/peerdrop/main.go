@@ -30,7 +30,7 @@ func main() {
 
 	//start browsing
 	go func() {
-		d.StartPersistentBrowse(ctx)
+		d.Browse(ctx)
 	}()
 
 	waitForShutDown()
