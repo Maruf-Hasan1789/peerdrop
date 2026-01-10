@@ -34,6 +34,12 @@ func main() {
 	log.Printf("Port : %v\n", *port)
 	d := discovery.New()
 
+	cliObserver := &discovery.CLIObserver{
+		Discovery: d,
+	}
+
+	d.AddObserver(cliObserver)
+
 	//start registering
 	go func() {
 		if err := d.Register(ctx, selfPeer); err != nil {
@@ -56,6 +62,7 @@ func showPeersToUser(d *discovery.Discovery, ctx context.Context) {
 	time.Sleep(5 * time.Second)
 
 	peerList := d.GetPeers()
+
 	fmt.Printf("Peer List size %v\n", len(peerList))
 
 	for _, peer := range peerList {

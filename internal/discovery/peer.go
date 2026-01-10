@@ -11,6 +11,10 @@ import (
 	"github.com/grandcat/zeroconf"
 )
 
+type ActivePeers struct {
+	Peers []*Peer
+}
+
 type Peer struct {
 	ID        string
 	Name      string

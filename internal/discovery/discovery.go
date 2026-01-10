@@ -3,8 +3,9 @@ package discovery
 import "sync"
 
 type Discovery struct {
-	peers map[string]*Peer
-	mu    sync.Mutex
+	peers     map[string]*Peer
+	mu        sync.Mutex
+	observers []PeerObserver
 }
 
 func New() *Discovery {
@@ -31,4 +32,14 @@ func (d *Discovery) GetPeers() []*Peer {
 	}
 
 	return list
+}
+
+func (d *Discovery) AddObserver(observer PeerObserver) {
+	d.observers = append(d.observers, observer)
+}
+
+func (d *Discovery) NotifyOnPeerAdd(peer Peer) {
+	for _, observer := range d.observers {
+		go observer.OnPeerAdded(peer)
+	}
 }

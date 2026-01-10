@@ -26,6 +26,7 @@ func (d *Discovery) consumeEntries(ctx context.Context, entries <-chan *zeroconf
 			return
 		case e, ok := <-entries:
 			if !ok {
+				log.Printf("Browsing stopped\n")
 				return
 			}
 
@@ -37,6 +38,7 @@ func (d *Discovery) consumeEntries(ctx context.Context, entries <-chan *zeroconf
 
 			//log.Printf("New  Peer: %v \n", peer)
 			d.addOrUpdatePeer(peer)
+			d.NotifyOnPeerAdd(*peer)
 		}
 	}
 }
