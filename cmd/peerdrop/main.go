@@ -57,6 +57,7 @@ func main() {
 	time.Sleep(time.Second * 5)
 
 	buf := bufio.NewReader(os.Stdin)
+loop:
 	for {
 		//showPeersToUser(d, ctx)
 		fmt.Printf("Enter command\n")
@@ -67,12 +68,14 @@ func main() {
 		case "showPeers":
 			showPeersToUser(d, ctx)
 		case "exit":
-			waitForShutDown()
-			cancel()
+			break loop
 		default:
 			fmt.Println("Unknown Command " + input)
 		}
 	}
+
+	waitForShutDown()
+	cancel()
 }
 
 func showPeersToUser(d *discovery.Discovery, ctx context.Context) {
@@ -93,7 +96,7 @@ func showPeersToUser(d *discovery.Discovery, ctx context.Context) {
 
 	if choice < 0 || choice >= len(peerList) {
 		log.Printf("User choice %v\n", choice)
-
+		return
 		//goto userChoiceForPeer
 	}
 
@@ -155,7 +158,9 @@ func handleMessage(msg []byte) {
 }
 
 func waitForShutDown() {
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
+	fmt.Printf("Wait for showdown\n")
 }

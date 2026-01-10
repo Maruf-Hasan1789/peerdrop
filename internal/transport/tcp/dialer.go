@@ -20,6 +20,7 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection
 
 	if err != nil {
 		log.Printf("Error occurred while connecting %v\n", err)
+		return nil, err
 	}
 
 	tcpConnection := &tcpConnection{
