@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,14 +54,28 @@ func main() {
 		d.Browse(ctx, *selfPeer)
 	}()
 
-	showPeersToUser(d, ctx)
+	time.Sleep(time.Second * 5)
 
-	waitForShutDown()
-	cancel()
+	buf := bufio.NewReader(os.Stdin)
+	for {
+		//showPeersToUser(d, ctx)
+		fmt.Printf("Enter command\n")
+		input, _ := buf.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		switch input {
+		case "showPeers":
+			showPeersToUser(d, ctx)
+		case "exit":
+			waitForShutDown()
+			cancel()
+		default:
+			fmt.Println("Unknown Command " + input)
+		}
+	}
 }
 
 func showPeersToUser(d *discovery.Discovery, ctx context.Context) {
-	time.Sleep(5 * time.Second)
 
 	peerList := d.GetPeers()
 
