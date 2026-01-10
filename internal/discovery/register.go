@@ -2,21 +2,19 @@ package discovery
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/grandcat/zeroconf"
 )
 
-func (d *Discovery) Register(ctx context.Context, port int) error {
+func (d *Discovery) Register(ctx context.Context, selfPeer *Peer) error {
 	log.Printf("Started registering")
-	serviceName := fmt.Sprintf("peerdrop-%s-%d", hostname(), port)
 
 	server, err := zeroconf.Register(
-		serviceName,
+		selfPeer.Name,
 		"_peerdrop._tcp",
 		"local.",
-		port,
+		selfPeer.Port,
 		[]string{"version=1"},
 		nil,
 	)
