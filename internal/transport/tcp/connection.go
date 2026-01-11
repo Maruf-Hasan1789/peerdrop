@@ -1,6 +1,8 @@
 package transport
 
 import (
+	"encoding/binary"
+	"io"
 	"net"
 	"sync"
 
@@ -36,19 +38,31 @@ func (conn *tcpConnection) Send(data []byte) error {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
+	length := uint32(len(data))
+
+	//writing length first
+	if err := binary.Write(conn.conn, binary.BigEndian, length); err != nil {
+		return err
+	}
+
+	//writing payload
 	_, err := conn.conn.Write(data)
 
 	return err
 }
 
 func (conn *tcpConnection) Receive() ([]byte, error) {
+	var length uint32
 
-	buf := make([]byte, 4096)
+	if err := binary.Read(conn.conn, binary.BigEndian, &length); err != nil {
+		return nil, err
+	}
 
-	n, err := conn.conn.Read(buf)
+	buf := make([]byte, length)
 
-	return buf[:n], err
+	_, err := io.ReadFull(conn.conn, buf)
 
+	return buf, err
 }
 
 func (conn *tcpConnection) Close() error {

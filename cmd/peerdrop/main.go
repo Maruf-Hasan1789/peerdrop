@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 )
 
@@ -129,32 +130,28 @@ func listenForConnections(listener *transport.Listener, ctx context.Context, sel
 
 func handleConnection(conn transport.Connection) {
 	defer conn.Close()
+	session := session.NewPeerSession(conn)
 
-	done := make(chan struct{})
+	session.OnFileReceived(func(name string) {
+		log.Printf("File received %v\n", name)
+	})
 
-	go func() {
-		readLoop(conn)
-		close(done)
-	}()
-	conn.Send([]byte("Hello Maruf"))
+	session.OnDisconnected(func(peer discovery.Peer) {
+		log.Printf("Peer disconnected %v\n", peer.Name)
+	})
 
-	<-done
-}
+	session.OnError(func(err error) {
+		log.Printf("Session error %v\n", err)
+	})
 
-func readLoop(conn transport.Connection) {
-	for {
-		msg, err := conn.Receive()
+	session.Start()
 
-		if err != nil {
-			return
-		}
-
-		handleMessage(msg)
+	if conn.PeerInfo().Port == 9791 {
+		session.SendLargeFile("/home/marufhasan/Downloads/book-1-master.zip", 1024*1024)
 	}
-}
+	//session.SendText("Hello Maruf")
 
-func handleMessage(msg []byte) {
-	log.Printf("Message %v\n", string(msg))
+	<-session.Done()
 }
 
 func waitForShutDown() {
