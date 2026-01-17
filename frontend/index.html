@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PeerDrop</title>
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<div id="container">
+
+    <!-- Left panel: file upload + receiver -->
+    <div id="main-column">
+        <h2>Send File</h2>
+
+        <!-- Selected receiver -->
+        <div id="receiver-container">
+            <label for="receiver-select">Receiver:</label>
+            <select id="receiver-select">
+                <option value="" disabled selected>Select a peer</option>
+            </select>
+        </div>
+
+
+        <!-- File upload form -->
+        <form id="upload-form">
+            <input type="file" id="file-input" name="file"><br><br>
+            <button type="submit" id="send-btn">Send</button>
+        </form>
+    </div>
+
+    <!-- Right panel: connected peers -->
+    <div id="sidebar-column">
+        <h2>Connected Peers</h2>
+        <ul id="peer-list">
+            <!-- Peers will be rendered dynamically -->
+            <!-- Example:
+            <li data-peer-id="123" class="peer-item">Alice</li>
+            -->
+        </ul>
+    </div>
+
+</div>
+
+<!-- Include frontend JS -->
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

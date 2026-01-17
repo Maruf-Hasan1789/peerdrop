@@ -28,8 +28,10 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 
 # PeerDrop binary
 /peerdrop
+frontend/node_modules
+frontend/dist/

@@ -88,23 +88,13 @@ func (p *PeerSession) readLoop() {
 		data, err := p.conn.Receive()
 
 		if err != nil {
-			if err == io.EOF {
-				log.Printf("Peer disconnected %v\n", p.peer.Name)
-			}
-			if p.onDisconnected != nil {
-				p.onDisconnected(p.peer)
-			}
-
-			if p.onError != nil && err != io.EOF {
-				p.onError(err)
-			}
+			p.handleDisconnect(err)
 			return
 		}
 
 		p.lastSeen = time.Now()
 		p.handleMessage(data)
 	}
-
 }
 
 func (p *PeerSession) handleMessage(data []byte) {
@@ -186,9 +176,12 @@ func (p *PeerSession) send(msg protocol.Message) error {
 }
 
 func (p *PeerSession) SendLargeFile(path string, chunkSize int) error {
+	log.Printf("Entering Sending LargeFile %v\n", path)
+
 	f, err := os.Open(path)
 
 	if err != nil {
+		log.Printf("Error opening file %v: %v", path, err)
 		return err
 	}
 
@@ -266,5 +259,21 @@ func (p *PeerSession) handleChunk(msg protocol.Message) {
 		log.Printf("Large file received %v\n", fileName)
 
 		delete(incomingFiles, msg.Name)
+	}
+}
+
+func (p *PeerSession) GetPeerInfo() discovery.Peer {
+	return p.peer
+}
+
+func (p *PeerSession) handleDisconnect(err error) {
+	log.Printf("Peer disconnected %v %v\n", p.peer.Name, err)
+
+	if p.onDisconnected != nil {
+		p.onDisconnected(p.peer)
+	}
+
+	if p.onError != nil && err != io.EOF {
+		p.onError(err)
 	}
 }
