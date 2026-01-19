@@ -1,6 +1,10 @@
 package discovery
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/labstack/gommon/log"
+)
 
 type Discovery struct {
 	peers     map[string]*Peer
@@ -17,7 +21,6 @@ func New() *Discovery {
 func (d *Discovery) addOrUpdatePeer(p *Peer) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-
 	d.peers[p.ID] = p
 }
 
@@ -42,4 +45,17 @@ func (d *Discovery) NotifyOnPeerAdd(peer Peer) {
 	for _, observer := range d.observers {
 		go observer.OnPeerAdded(peer)
 	}
+}
+
+func (d *Discovery) GetPeerById(peerId string) *Peer {
+	log.Printf("GetPeerById\n")
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	p, ok := d.peers[peerId]
+	if !ok {
+		return nil
+	}
+
+	return p
 }

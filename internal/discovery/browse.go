@@ -3,11 +3,13 @@ package discovery
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/grandcat/zeroconf"
 )
 
 func (d *Discovery) Browse(ctx context.Context, selfPeer Peer) error {
+	time.Sleep(10 * time.Second)
 	log.Printf("Started browsing")
 	resolver, _ := zeroconf.NewResolver(nil)
 
@@ -36,7 +38,7 @@ func (d *Discovery) consumeEntries(ctx context.Context, entries <-chan *zeroconf
 				continue
 			}
 
-			//log.Printf("New  Peer: %v \n", peer)
+			log.Printf("New  Peer: %v \n", peer)
 			d.addOrUpdatePeer(peer)
 			d.NotifyOnPeerAdd(*peer)
 		}

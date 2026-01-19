@@ -23,6 +23,29 @@ type Peer struct {
 	Version   string
 }
 
+type PeerDTO struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Addresses []string `json:"addresses"`
+	Port      int      `json:"port"`
+	Version   string   `json:"version"`
+}
+
+func ToPeerDTO(p Peer) PeerDTO {
+	addrs := make([]string, len(p.Addresses))
+	for i, ip := range p.Addresses {
+		addrs[i] = ip.String()
+	}
+
+	return PeerDTO{
+		ID:        p.ID,
+		Name:      p.Name,
+		Addresses: addrs,
+		Port:      p.Port,
+		Version:   p.Version,
+	}
+}
+
 func NewPeerFromEntry(e *zeroconf.ServiceEntry) *Peer {
 	return &Peer{
 		ID:        peerID(e.Instance),
