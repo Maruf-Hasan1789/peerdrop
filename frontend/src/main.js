@@ -1,5 +1,5 @@
 console.log("🔥 frontend main.js loaded");
-
+import './style.css'
 
 import  {ListPeers, SendFileToPeer, PickFile}  from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
@@ -70,6 +70,10 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshBtn?.addEventListener("click", fetchPeers);
 });
 
+
+
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
 EventsOn("peer-connected", (peer) => {
     console.log("Peer Added from frontend")
     peersMap.set(peer.id, peer);
@@ -94,6 +98,17 @@ EventsOn("randomEvent", (data) => {
    console.log("random event from frontend " + data)
 });
 
+
+EventsOn("wails:file-drop", (x,y,paths) =>{
+    console.log("Dropped files at: ",x,y);
+    console.log("File paths: ", paths)
+
+    if(paths && paths.length > 0) {
+        console.log("File received via Drag & Drop");
+        handleFileSelection(paths[0]);
+    }
+})
+
 sendFileButton.addEventListener("click", async (event) => {
     event.preventDefault();
 
@@ -106,7 +121,7 @@ sendFileButton.addEventListener("click", async (event) => {
 
         // Send file to selected peer
         await SendFileToPeer(receiverSelect.value, filePath);
-
+        sendFileButton.disabled = true;
         console.log("File sent:", filePath);
     } catch (err) {
         console.error("Error while sending file:", err);
@@ -116,20 +131,26 @@ sendFileButton.addEventListener("click", async (event) => {
 pickFile.addEventListener("click", async () => {
     console.log("Picking File")
     filePath = await PickFile();
-
-    if(!filePath) {
-        fileName.textContent = "No File Selected"
-        sendFileButton.disabled= true;
-    }
-    sendFileButton.disabled = false;
-    fileName.textContent = getFileName(filePath)
-    console.log(filePath)
+    handleFileSelection(filePath);
 });
 
 function getFileName(path) {
     return path.split(/[/\\]/).pop();
 }
 
+function handleFileSelection(path) {
+    if(!path || path === "") {
+        fileName.textContent = "No file selected";
+        sendFileButton.disabled = true;
+        fileName.textContent = "";
+        return;
+    }
+
+    filePath = path;
+    fileName.textContent = getFileName(path)
+    sendFileButton.disabled = false;
+    console.log("File Ready to send", filePath)
+}
 
 console.log("Hello");
 updatePeerListUI();

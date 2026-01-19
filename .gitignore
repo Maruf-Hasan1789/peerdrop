@@ -35,3 +35,4 @@ go.work.sum
 /peerdrop
 frontend/node_modules
 frontend/dist/
+/build

@@ -1,31 +1,44 @@
-/* Container: main wrapper for two columns */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#main-column { background: lightblue; }
+#sidebar-column { background: lightgreen; }
+
 #container {
+    --wails-drop-target: drop;
+    pointer-events: auto;
     display: flex;
-    height: 100vh;
+    height: 100vh; /* important for Linux WebKitGTK */
+    width: 100%;
     font-family: Arial, sans-serif;
 }
 
-/* Left panel: main content / file upload */
 #main-column {
-    flex: 2; /* 2/3 width */
+    flex: 1;             /* take remaining space */
     padding: 20px;
     background-color: #f9f9f9;
+    min-width: 0;        /* ensures child flex items shrink correctly */
 }
 
-/* Right panel: connected peers sidebar */
 #sidebar-column {
-    flex: 1; /* 1/3 width */
+    width: 280px;        /* fixed sidebar width */
+    flex-shrink: 0;      /* prevent collapse */
     padding: 20px;
-    background-color: #eee;
+    background-color: white;
     border-left: 1px solid #ccc;
     overflow-y: auto;
+    min-height: 0;       /* ensures overflow works in WebKitGTK */
 }
+
 
 /* File upload form */
 #upload-form {
     display: flex;
-    align-items: center;
-    gap: 10px; /* space between file input and receiver */
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 /* File input styling */
@@ -85,4 +98,10 @@
 
 .peer-item.selected {
     background-color: #d0f0ff;
+}
+
+#container.wails-drop-target-active {
+    outline: 4px dashed #4CAF50; /* Green dashed border */
+    outline-offset: -10px;        /* Moves border inside the edge */
+    background-color: rgba(74, 175, 80, 0.05) !important;
 }
