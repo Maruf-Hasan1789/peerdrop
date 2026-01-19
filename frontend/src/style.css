@@ -1,81 +1,51 @@
-html, body {
+/* --- Core Layout & Reset --- */
+:root {
+    --bg-main: #ffffff;
+    --bg-sidebar: #f5f7f9;
+    --accent: #3498db;
+    --accent-hover: #2980b9;
+    --text-dark: #2c3e50;
+    --border: #e1e4e8;
+    --drop-hover: rgba(52, 152, 219, 0.05);
+}
+
+body, html {
     height: 100%;
     margin: 0;
     padding: 0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    color: var(--text-dark);
 }
-#main-column { background: lightblue; }
-#sidebar-column { background: lightgreen; }
 
 #container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    background: var(--bg-main);
+    /* Wails Logic */
     --wails-drop-target: drop;
     pointer-events: auto;
-    display: flex;
-    height: 100vh; /* important for Linux WebKitGTK */
-    width: 100%;
-    font-family: Arial, sans-serif;
 }
 
-#main-column {
-    flex: 1;             /* take remaining space */
-    padding: 20px;
-    background-color: #f9f9f9;
-    min-width: 0;        /* ensures child flex items shrink correctly */
-}
-
+/* --- Sidebar (Right Side) --- */
 #sidebar-column {
-    width: 280px;        /* fixed sidebar width */
-    flex-shrink: 0;      /* prevent collapse */
-    padding: 20px;
-    background-color: white;
-    border-left: 1px solid #ccc;
+    width: 280px;
+    flex-shrink: 0;
+    background-color: var(--bg-sidebar);
+    border-left: 1px solid var(--border);
+    padding: 24px;
     overflow-y: auto;
-    min-height: 0;       /* ensures overflow works in WebKitGTK */
+    order: 2; /* Ensures it stays on the right */
 }
 
-
-/* File upload form */
-#upload-form {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+#sidebar-column h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7f8c8d;
+    margin-bottom: 20px;
 }
 
-/* File input styling */
-#file-input {
-    flex: 2; /* takes more space */
-    padding: 8px;
-}
-
-/* Receiver input next to file input */
-#receiver-container {
-    flex: 1; /* smaller width */
-    display: flex;
-    flex-direction: column;
-}
-
-/* Receiver input styling */
-#receiver {
-    padding: 8px;
-    width: 100%;
-}
-
-/* Upload button below */
-#upload-btn {
-    margin-top: 15px;
-    padding: 10px 20px;
-    cursor: pointer;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-}
-
-#upload-btn:hover {
-    background-color: #45a049;
-}
-
-/* Peers list styling */
 #peer-list {
     list-style: none;
     padding: 0;
@@ -83,25 +53,181 @@ html, body {
 }
 
 #peer-list li {
-    background-color: #fff;
-    margin-bottom: 10px;
-    padding: 10px;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background-color: white;
+    margin-bottom: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
     font-size: 14px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 #peer-list li:hover {
-    background-color: #f0f0f0;
+    border-color: var(--accent);
+    transform: translateY(-2px);
 }
 
 .peer-item.selected {
-    background-color: #d0f0ff;
+    border-color: var(--accent);
+    background-color: #ebf5ff;
 }
 
-#container.wails-drop-target-active {
-    outline: 4px dashed #4CAF50; /* Green dashed border */
-    outline-offset: -10px;        /* Moves border inside the edge */
-    background-color: rgba(74, 175, 80, 0.05) !important;
+/* --- Main Content (Left Side) --- */
+#main-column {
+    flex: 1;
+    padding: 40px;
+    background-color: white;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.main-header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+
+.header-actions { display: flex; gap: 10px; }
+
+.icon-btn {
+    background: #f0f2f5;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #555;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover { background: #e2e6ea; color: var(--accent); }
+
+/* --- Transfer Form & Drop Zone --- */
+.transfer-section h2 { font-size: 20px; margin-bottom: 20px; }
+
+#receiver-container { margin-bottom: 20px; }
+#receiver-container label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+
+#receiver-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fcfcfc;
+    font-size: 14px;
+}
+
+.drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 15px;
+    padding: 60px 20px;
+    text-align: center;
+    margin-bottom: 24px;
+    transition: all 0.3s border-radius;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.drop-area p { margin: 0; color: #9ca3af; font-size: 15px; }
+
+#pick-file {
+    background: white;
+    border: 1px solid #d1d5db;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+#pick-file:hover { background: #f9fafb; }
+
+.file-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+#file-name { font-size: 14px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+
+#send-btn {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#send-btn:hover:not(:disabled) { background-color: var(--accent-hover); }
+#send-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+
+/* --- Wails Drop Active State --- */
+#container.wails-drop-target-active .drop-area {
+    border-color: var(--accent);
+    background-color: var(--drop-hover);
+    border-style: solid;
+}
+
+/* --- Modals (Popups) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    display: none; /* Controlled by JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    width: 380px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-content h3 { margin: 0; }
+.close-modal { background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8; }
+
+.settings-body label { display: block; margin-top: 15px; font-size: 13px; font-weight: 600; color: #64748b; }
+.settings-body input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.save-btn {
+    width: 100%;
+    margin-top: 25px;
+    background: var(--text-dark);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
 }
