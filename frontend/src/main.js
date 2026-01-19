@@ -10,7 +10,9 @@ const peerListEl = document.getElementById("peer-list");
 const refreshBtn = document.getElementById("refresh-btn");
 const sendFileButton = document.getElementById("send-btn")
 const receiverSelect = document.getElementById("receiver-select")
-
+const pickFile = document.getElementById("pick-file")
+const fileName = document.getElementById("file-name")
+let filePath =  "";
 
 // Local Map to store peers
 const peersMap = new Map();
@@ -77,7 +79,10 @@ EventsOn("peer-connected", (peer) => {
 
 EventsOn("peer-disconnected", (peer) => {
     peersMap.delete(peer.id);
-    updatePeerListUI()
+    fetchPeers().then(r => {
+        console.log(r)
+    });
+
     console.log(`[DISCONNECTED] ${peer.name} (${peer.id})`);
 });
 
@@ -94,8 +99,10 @@ sendFileButton.addEventListener("click", async (event) => {
 
     try {
         // Open native file dialog via Go
-        const filePath = await PickFile();
-        if (!filePath) return;
+        if(filePath === "") {
+            console.error("File Path is not provided")
+            return
+        }
 
         // Send file to selected peer
         await SendFileToPeer(receiverSelect.value, filePath);
@@ -105,6 +112,23 @@ sendFileButton.addEventListener("click", async (event) => {
         console.error("Error while sending file:", err);
     }
 });
+
+pickFile.addEventListener("click", async () => {
+    console.log("Picking File")
+    filePath = await PickFile();
+
+    if(!filePath) {
+        fileName.textContent = "No File Selected"
+        sendFileButton.disabled= true;
+    }
+    sendFileButton.disabled = false;
+    fileName.textContent = getFileName(filePath)
+    console.log(filePath)
+});
+
+function getFileName(path) {
+    return path.split(/[/\\]/).pop();
+}
 
 
 console.log("Hello");
