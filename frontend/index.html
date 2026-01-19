@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>PeerDrop</title>
-    <link rel="stylesheet" href="./src/style.css">
+    <!-- Wails-safe CSS path -->
 </head>
 <body>
 <div id="container">
 
-    <!-- Left panel: file upload + receiver -->
+    <!-- Left panel -->
     <div id="main-column">
         <h2>Send File</h2>
 
-        <!-- Selected receiver -->
         <div id="receiver-container">
             <label for="receiver-select">Receiver:</label>
             <select id="receiver-select">
@@ -20,29 +19,21 @@
             </select>
         </div>
 
-
-        <!-- File upload form -->
         <form id="upload-form">
             <button type="button" id="pick-file">Pick File</button>
-            <span id="file-name">No file selected</span><br><br><br><br>
+            <span id="file-name">No file selected</span>
             <button type="submit" id="send-btn" disabled>Send</button>
         </form>
     </div>
 
-    <!-- Right panel: connected peers -->
+    <!-- Right panel -->
     <div id="sidebar-column">
         <h2>Connected Peers</h2>
-        <ul id="peer-list">
-            <!-- Peers will be rendered dynamically -->
-            <!-- Example:
-            <li data-peer-id="123" class="peer-item">Alice</li>
-            -->
-        </ul>
+        <ul id="peer-list"></ul>
     </div>
 
 </div>
 
-<!-- Include frontend JS -->
-<script type="module" src="./src/main.js"></script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>

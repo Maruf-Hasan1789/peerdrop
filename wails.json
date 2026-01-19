@@ -6,6 +6,7 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "frontend:dir": "frontend",
   "author": {
     "name": "maruf_hasan",
     "email": "marufhasan212@gmail.com"

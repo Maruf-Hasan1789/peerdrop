@@ -77,6 +77,10 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			wailsApp.Startup(ctx)
 		},
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop:     true,
+			DisableWebViewDrop: false,
+		},
 		Bind: []interface{}{
 			wailsApp,
 		},

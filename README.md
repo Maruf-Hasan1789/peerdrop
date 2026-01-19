@@ -8,3 +8,4 @@ Checklist
 - [ ] Sending files required Permission? Default True
 - [ ] History for file receiver and sent
 - [ ] Progress Bar
+- [x] Drag And Drop of File
