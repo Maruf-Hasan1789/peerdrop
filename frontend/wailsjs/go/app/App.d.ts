@@ -8,6 +8,8 @@ import {context} from '../models';
 
 export function GetSettings():Promise<app.Settings>;
 
+export function GetTransferHistories():Promise<Array<app.transferHistory>>;
+
 export function HandleConnection(arg1:transport.Connection):Promise<void>;
 
 export function ListPeers():Promise<Array<discovery.PeerDTO>>;

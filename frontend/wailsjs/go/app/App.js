@@ -6,6 +6,10 @@ export function GetSettings() {
   return window['go']['app']['App']['GetSettings']();
 }
 
+export function GetTransferHistories() {
+  return window['go']['app']['App']['GetTransferHistories']();
+}
+
 export function HandleConnection(arg1) {
   return window['go']['app']['App']['HandleConnection'](arg1);
 }

@@ -19,6 +19,8 @@ type App struct {
 	settings  *Settings
 }
 
+var sentHistories []transferHistory
+
 func NewApp(d *discovery.Discovery) *App {
 	return &App{
 		discovery: d,
@@ -33,7 +35,15 @@ func (a *App) Startup(ctx context.Context) {
 		log.Fatal(err)
 	}
 
+	sentHistories, err := loadOrCreateSentTransferHistory()
+
+	if err != nil {
+		log.Printf("Error loading sent transfer history: %v", err)
+	}
+
 	a.settings = settings
+
+	log.Printf("Loading sent transfer history%v\n", sentHistories)
 }
 
 func (a *App) Name(name string) string {
@@ -142,6 +152,13 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 	}
 
 	log.Printf("Sending file to peer %v\n", peerId)
+
+	err = addNewSentFileHistory(selectedPeerSession.GetPeerInfo().Name, filePath, "COMPLETED")
+
+	if err != nil {
+		log.Printf("Error adding file to peer %v\n", peerId)
+	}
+
 	return nil
 }
 
@@ -215,4 +232,14 @@ func (a *App) PickDownloadFolder() (string, error) {
 	}
 	log.Printf("Dialog %v\n", dialog)
 	return dialog, err
+}
+
+func (a *App) GetTransferHistories() []transferHistory {
+	sentHistories, err := loadOrCreateSentTransferHistory()
+	if err != nil {
+		log.Printf("Error loading sent transfer history: %v\n", err)
+		return nil
+	}
+	
+	return sentHistories
 }

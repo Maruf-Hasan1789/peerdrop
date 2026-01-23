@@ -552,3 +552,147 @@ body, html {
     background: #fee2e2;
     color: #ef4444;
 }
+
+
+/* --- Modal Overlay --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none; /* toggle via JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px); /* modern blur effect */
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+/* --- Modal Content --- */
+.modal-content.history-modal {
+    width: 500px;
+    max-height: 75vh;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 25px 30px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out;
+}
+
+/* --- Header --- */
+.modal-content.history-modal header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-content.history-modal h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #111827;
+}
+
+/* --- History Body --- */
+.history-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.clear-btn {
+    align-self: flex-end;
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-bottom: 12px;
+    transition: background 0.2s;
+}
+
+.clear-btn:hover {
+    background: #dc2626;
+}
+
+/* --- History List --- */
+#sent-history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 60vh;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* --- Individual History Item --- */
+.history-item {
+    display: grid;
+    grid-template-columns: 2.5fr 1.5fr 1fr 1fr;
+    gap: 12px;
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    align-items: center;
+    font-size: 14px;
+    color: #374151;
+    transition: background 0.15s;
+    border-radius: 8px;
+}
+
+.history-item:hover {
+    background: #f3f4f6;
+}
+
+.history-item .file-name {
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.history-item .receiver {
+    color: #6b7280;
+}
+
+.history-item .status {
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.status.success { background: #d1fae5; color: #065f46; }
+.status.failed  { background: #fee2e2; color: #b91c1c; }
+
+.history-item .time {
+    color: #9ca3af;
+    font-size: 12px;
+    text-align: right;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

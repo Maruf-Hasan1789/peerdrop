@@ -7,5 +7,5 @@ Checklist
 - [X] Connected Peers in Square Tiles Menu. Clicking will set the peer as receiver
 - [ ] Sending files required Permission? Default True
 - [ ] History for file receiver and sent
-- [ ] Progress Bar
+- [X] Progress Bar
 - [X] Drag And Drop of File
