@@ -3,9 +3,9 @@ PeerDrop is a fast, encrypted, peer-to-peer file transfer tool for local network
 
 Checklist
 - [X] Settings. Profile Information (Optional, Name)
-- [ ] Saved file to Download/PeerDrop. Create Folder if not exists. Add selection option
-- [x] Connected Peers in Square Tiles Menu. Clicking will set the peer as receiver
+- [X] Saved file to Download/PeerDrop. Create Folder if not exists. Add selection option
+- [X] Connected Peers in Square Tiles Menu. Clicking will set the peer as receiver
 - [ ] Sending files required Permission? Default True
 - [ ] History for file receiver and sent
 - [ ] Progress Bar
-- [x] Drag And Drop of File
+- [X] Drag And Drop of File

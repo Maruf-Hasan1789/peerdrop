@@ -16,6 +16,7 @@ import (
 type App struct {
 	ctx       context.Context
 	discovery *discovery.Discovery
+	settings  *Settings
 }
 
 func NewApp(d *discovery.Discovery) *App {
@@ -26,12 +27,13 @@ func NewApp(d *discovery.Discovery) *App {
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
-	_, err := loadOrCreateSettings()
+	settings, err := loadOrCreateSettings()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	a.settings = settings
 }
 
 func (a *App) Name(name string) string {
@@ -94,6 +96,7 @@ func (a *App) ListPeers() []discovery.PeerDTO {
 
 func (a *App) OnPeerAdded(peer discovery.Peer) {
 	// 🔥 Notify frontend immediately
+	log.Printf("On Peer Added 97 %v\n", peer.Name)
 	if a.ctx != nil {
 		log.Printf("peer added Event %v\n", peer.Name)
 		runtime.EventsEmit(a.ctx, "peer-connected", discovery.ToPeerDTO(peer))
@@ -128,7 +131,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		}
 
 		selectedPeerSession = session.NewPeerSession(conn)
-		selectedPeerSession.Start()
+		selectedPeerSession.Start(a.settings.DownloadPath)
 		a.RegisterSession(selectedPeerSession)
 	}
 
