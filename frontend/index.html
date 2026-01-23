@@ -143,6 +143,30 @@
     </div>
 </div>
 
+<!-- Transfer History Modal -->
+<div id="transfer-history-modal" class="modal-overlay">
+    <div class="modal-content history-modal">
+        <header>
+            <h3>Transfer History</h3>
+            <button class="close-modal" id="close-transfer-history">&times;</button>
+        </header>
+
+        <div class="history-body">
+            <button id="clear-history" class="clear-btn">Clear History</button>
+            <ul id="sent-history-list">
+                <!-- Example entry:
+                <li class="history-item">
+                    <span class="file-name">example.pdf</span>
+                    <span class="receiver">Alice</span>
+                    <span class="status success">Sent</span>
+                    <span class="time">12:35 PM</span>
+                </li>
+                -->
+            </ul>
+        </div>
+    </div>
+</div>
+
 
 <script type="module" src="src/main.js"></script>
 </body>

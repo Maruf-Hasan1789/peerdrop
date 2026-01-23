@@ -1,7 +1,15 @@
 console.log("🔥 frontend main.js loaded");
 import './style.css'
 
-import {ListPeers, SendFileToPeer, PickFile, GetSettings, SaveSettings, PickDownloadFolder} from '../wailsjs/go/app/App';
+import {
+    ListPeers,
+    SendFileToPeer,
+    PickFile,
+    GetSettings,
+    SaveSettings,
+    PickDownloadFolder,
+    GetTransferHistories
+} from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
 
 
@@ -24,6 +32,10 @@ const cancelSettingsBtn = document.getElementById("settingsCancelButton");
 let originalSettings = {};
 const transferListEl = document.getElementById("transfer-list");
 const transferCountEl = document.getElementById("transfer-count");
+const transferHistoryBtn = document.getElementById("history-toggle");
+const transferHistoryModal =  document.getElementById("transfer-history-modal");
+const closeTransferHistoryModal = document.getElementById("close-transfer-history");
+const sentTransferHistoryList = document.getElementById("sent-history-list");
 
 // Keep track of ongoing transfers
 const ongoingTransfers = new Map();
@@ -47,6 +59,10 @@ async function loadSettings() {
 loadSettings().then(r =>
     console.log("Settings is loaded")
 );
+
+loadTransferHistory().then(r => {
+    console.log("Transfer Histories is loaded")
+});
 
 // Local Map to store peers
 const peersMap = new Map();
@@ -92,6 +108,48 @@ function updatePeerListUI() {
     });
 }
 
+async function loadTransferHistory() {
+    console.log("Loading Transfer History")
+    sentTransferHistoryList.innerHTML = "";
+
+    const sentFileHistories = await GetTransferHistories();
+    console.log("Sent File Histories", sentFileHistories);
+    sentFileHistories.forEach(sentFile => {
+        const li = document.createElement("li");
+        li.classList.add("history-item");
+
+        li.innerHTML = `
+            <div class="history-main">
+                <span class="history-filename">${sentFile.fileName}</span>
+                <span class="history-status ${sentFile.status.toLowerCase()}">
+                    ${sentFile.status}
+                </span>
+            </div>
+        
+            <div class="history-meta">
+                <span class="history-receiver">
+                    to: ${sentFile.receiver}
+                </span>
+                <span class="history-time">
+                    ${formatTimestamp(sentFile.timeStamp)}
+                </span>
+            </div>
+        `;
+
+        sentTransferHistoryList.append(li);
+    });
+}
+
+function formatTimestamp(unixMilliSeconds) {
+    const date = new Date(unixMilliSeconds);
+    return date.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     refreshBtn?.addEventListener("click", fetchPeers);
@@ -361,4 +419,14 @@ EventsOn("transfer-progress", (payload) => {
 EventsOn("transfer-complete", (payload) => {
     console.log(payload);
     updateProgress(payload.id, 100);
+});
+
+
+transferHistoryBtn.addEventListener("click", () => {
+    transferHistoryModal.style.display = "flex";
+    loadTransferHistory().then(() => console.log("transfer history load"))
+});
+
+closeTransferHistoryModal.addEventListener("click", () => {
+   transferHistoryModal.style.display = "none";
 });

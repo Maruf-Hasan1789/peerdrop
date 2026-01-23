@@ -14,6 +14,24 @@ export namespace app {
 	        this.download_path = source["download_path"];
 	    }
 	}
+	export class transferHistory {
+	    receiver: string;
+	    fileName: string;
+	    status: string;
+	    timeStamp: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new transferHistory(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.receiver = source["receiver"];
+	        this.fileName = source["fileName"];
+	        this.status = source["status"];
+	        this.timeStamp = source["timeStamp"];
+	    }
+	}
 
 }
 
