@@ -135,7 +135,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		a.RegisterSession(selectedPeerSession)
 	}
 
-	err := selectedPeerSession.SendLargeFile(filePath, 1024*1024)
+	err := selectedPeerSession.SendLargeFile(a.ctx, filePath, 1024*1024)
 	if err != nil {
 		log.Printf("Error while creating connection during dialing %v\n", err)
 		return fmt.Errorf("Error while creating connection during dialing %v\n", err)

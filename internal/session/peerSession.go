@@ -1,17 +1,20 @@
 package session
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type chunkedFile struct {
@@ -175,7 +178,7 @@ func (p *PeerSession) send(msg protocol.Message) error {
 	return p.conn.Send(payload)
 }
 
-func (p *PeerSession) SendLargeFile(path string, chunkSize int) error {
+func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize int) error {
 	log.Printf("Entering Sending LargeFile %v\n", path)
 
 	f, err := os.Open(path)
@@ -194,6 +197,12 @@ func (p *PeerSession) SendLargeFile(path string, chunkSize int) error {
 	log.Printf("total chunks %v\n", totalChunks)
 
 	buf := make([]byte, chunkSize)
+	fileId := fmt.Sprintf("%v-%v", path, time.Now().Unix())
+
+	runtime.EventsEmit(ctx, "transfer-start", map[string]string{
+		"id":       fileId,
+		"fileName": path,
+	})
 
 	for i := 0; i < totalChunks; i++ {
 		n, err := f.Read(buf)
@@ -213,8 +222,19 @@ func (p *PeerSession) SendLargeFile(path string, chunkSize int) error {
 		if err := p.send(msg); err != nil {
 			return err
 		}
+
+		runtime.EventsEmit(ctx, "transfer-progress", map[string]string{
+			"id":          fileId,
+			"file":        path,
+			"totalChunks": strconv.Itoa(totalChunks),
+			"chunkIndex":  strconv.Itoa(msg.ChunkIndex),
+		})
 	}
 
+	runtime.EventsEmit(ctx, "transfer-complete", map[string]string{
+		"id":   fileId,
+		"file": path,
+	})
 	return nil
 }
 

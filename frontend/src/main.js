@@ -22,6 +22,12 @@ const downloadPath = document.getElementById("downloadPath");
 const folderPicker = document.getElementById("folderPicker");
 const cancelSettingsBtn = document.getElementById("settingsCancelButton");
 let originalSettings = {};
+const transferListEl = document.getElementById("transfer-list");
+const transferCountEl = document.getElementById("transfer-count");
+
+// Keep track of ongoing transfers
+const ongoingTransfers = new Map();
+
 
 async function loadSettings() {
     try {
@@ -256,4 +262,103 @@ cancelSettingsBtn.addEventListener("click",  () => {
     console.log("Original Settings", originalSettings)
     userName.value = originalSettings.user_name;
     downloadPath.value = originalSettings.download_path;
+});
+
+// --- Function to create a new transfer card ---
+function createTransferCard(id, fileName) {
+    const card = document.createElement("div");
+    card.classList.add("transfer-card");
+    card.dataset.id = id;
+
+    card.innerHTML = `
+        <div class="transfer-info">
+            <span class="file-label">${fileName}</span>
+            <span class="status-label">0%</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+        <div class="transfer-actions">
+            <button class="action-btn pause">⏸</button>
+            <button class="action-btn resume" style="display:none;">▶️</button>
+            <button class="action-btn cancel">❌</button>
+        </div>
+    `;
+
+    // Add card to DOM
+    transferListEl.appendChild(card);
+    updateTransferCount();
+
+    // Button events
+    const pauseBtn = card.querySelector(".pause");
+    const resumeBtn = card.querySelector(".resume");
+    const cancelBtn = card.querySelector(".cancel");
+
+    let paused = false;
+
+    pauseBtn.addEventListener("click", () => {
+        paused = true;
+        pauseBtn.style.display = "none";
+        resumeBtn.style.display = "inline-flex";
+        // Optionally, tell backend to pause
+    });
+
+    resumeBtn.addEventListener("click", () => {
+        paused = false;
+        pauseBtn.style.display = "inline-flex";
+        resumeBtn.style.display = "none";
+        // Optionally, tell backend to resume
+    });
+
+    cancelBtn.addEventListener("click", () => {
+        card.remove();
+        ongoingTransfers.delete(id);
+        updateTransferCount();
+        // Optionally, tell backend to cancel
+    });
+
+    // Save reference
+    ongoingTransfers.set(id, { card, paused });
+}
+
+// --- Function to update progress ---
+function updateProgress(id, progress) {
+    const transfer = ongoingTransfers.get(id);
+    if (!transfer) return;
+
+    const progressBar = transfer.card.querySelector(".progress-bar");
+    const statusLabel = transfer.card.querySelector(".status-label");
+
+    progressBar.style.width = `${progress}%`;
+    statusLabel.textContent = progress === 100 ? "Completed" : `Sending… ${Math.floor(progress)}%`;
+
+    if (progress === 100) {
+        setTimeout(() => {
+            transfer.card.remove();
+            ongoingTransfers.delete(id);
+            updateTransferCount();
+        }, 1000);
+    }
+}
+
+// --- Update transfer count ---
+function updateTransferCount() {
+    transferCountEl.textContent = ongoingTransfers.size;
+}
+
+// --- Event Listeners from backend ---
+EventsOn("transfer-start", (payload) => {
+    console.log(payload);
+    createTransferCard(payload.id, payload.fileName);
+});
+
+EventsOn("transfer-progress", (payload) => {
+    console.log(payload);
+    let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
+    updateProgress(payload.id, progress);
+});
+
+EventsOn("transfer-complete", (payload) => {
+    console.log(payload);
+    updateProgress(payload.id, 100);
 });
