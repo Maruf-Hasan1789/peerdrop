@@ -1,3 +1,22 @@
+export namespace app {
+	
+	export class Settings {
+	    user_name: string;
+	    download_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.user_name = source["user_name"];
+	        this.download_path = source["download_path"];
+	    }
+	}
+
+}
+
 export namespace discovery {
 	
 	export class Peer {

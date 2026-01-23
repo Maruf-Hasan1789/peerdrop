@@ -1,10 +1,9 @@
 console.log("🔥 frontend main.js loaded");
 import './style.css'
 
-import  {ListPeers, SendFileToPeer, PickFile}  from '../wailsjs/go/app/App';
+import {ListPeers, SendFileToPeer, PickFile, GetSettings, SaveSettings} from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
 
-console.log("🔥 imports resolved");
 
 const peerListEl = document.getElementById("peer-list");
 const refreshBtn = document.getElementById("refresh-btn");
@@ -14,6 +13,31 @@ const fileName = document.getElementById("file-name");
 const clearSelection = document.getElementById("clear-selection");
 let filePath =  "";
 const receiverSelect = document.getElementById("receiver-select");
+const settingsModal = document.getElementById("settings-modal");
+const settingsButton = document.getElementById("settings-toggle");
+const closeSettingsButton = document.getElementById("close-settings");
+const saveSettingsBtn = document.getElementById("saveSettingsButton");
+const userName = document.getElementById("userName");
+const downloadPath = document.getElementById("downloadPath");
+
+let originalSettings = {};
+
+async function loadSettings() {
+    try {
+        const settings = await GetSettings(); // Call Go backend
+        console.log('Loaded settings:', settings);
+        originalSettings = {...settings}
+
+        // Populate inputs
+        userName.value = settings.user_name || '';
+        downloadPath.value = settings.download_path || '/home/user/Downloads';
+
+    } catch (err) {
+        console.error("Failed to load settings:", err);
+    }
+}
+
+loadSettings();
 // Local Map to store peers
 const peersMap = new Map();
 
@@ -166,6 +190,16 @@ function renderSelectedPeer(peer) {
     document.getElementById("clear-selection").style.display = "flex";
 }
 
+
+function hasSettingsChanged() {
+    const currentSettings = {
+        user_name : userName.value,
+        download_path: downloadPath.value
+    };
+
+    return Object.keys(currentSettings).some(key=> currentSettings[key] !== originalSettings[key]);
+}
+
 clearSelection.addEventListener(("click"), () => {
     document.getElementById("receiver-select").value = "";
 
@@ -174,4 +208,31 @@ clearSelection.addEventListener(("click"), () => {
 
     document.querySelectorAll("#peer-list li")
         .forEach(el => el.classList.remove("selected"));
+});
+
+
+settingsButton.addEventListener("click", () => {
+    settingsModal.style.display = "flex";
+});
+
+closeSettingsButton.addEventListener("click", () => {
+    settingsModal.style.display = "none";
+});
+
+
+
+saveSettingsBtn.addEventListener("click", async () => {
+    const updatedSettings = {
+        user_name : userName.value,
+        download_path : downloadPath.value
+    };
+
+    try {
+        console.log(updatedSettings)
+        await SaveSettings(updatedSettings)
+        originalSettings = {...updatedSettings}
+        alert("Settings saved successfully")
+    } catch (err) {
+        console.error("Failed to save settings")
+    }
 });

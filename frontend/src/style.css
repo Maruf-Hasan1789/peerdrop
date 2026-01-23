@@ -303,3 +303,124 @@ body, html {
 
 .action-btn:hover { background: #e2e8f0; color: #1e293b; }
 .action-btn.cancel:hover { background: #fee2e2; color: #ef4444; }
+
+/* Overlay */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+/* Window */
+.settings-window {
+    width: 420px;
+    background: #f6f6f6;
+    color: #222;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, sans-serif;
+}
+
+/* Header */
+.settings-header {
+    height: 42px;
+    padding: 0 14px;
+    border-bottom: 1px solid #d0d0d0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+/* Content */
+.settings-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Groups */
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.group-title {
+    font-size: 13px;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+}
+
+/* Rows */
+.setting-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-row label {
+    font-size: 13px;
+    color: #333;
+}
+
+/* Inputs */
+.setting-row input,
+.setting-row select {
+    height: 30px;
+    padding: 4px 8px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+}
+
+/* Footer */
+.settings-footer {
+    padding: 10px 14px;
+    border-top: 1px solid #d0d0d0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Buttons */
+.btn {
+    min-width: 80px;
+    height: 30px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn.primary {
+    background: #2d7df6;
+    color: white;
+    border: none;
+}
+
+.btn.ghost {
+    background: transparent;
+    border: 1px solid #aaa;
+}
+
+/* Close */
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
