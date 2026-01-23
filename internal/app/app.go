@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
@@ -24,7 +26,12 @@ func NewApp(d *discovery.Discovery) *App {
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
-	runtime.EventsEmit(ctx, "randomEvent", "")
+	_, err := loadOrCreateSettings()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func (a *App) Name(name string) string {
@@ -146,4 +153,51 @@ func (a *App) PickFile() (string, error) {
 		return "", fmt.Errorf("no file selected")
 	}
 	return paths, nil
+}
+
+func (a *App) GetSettings() (*Settings, error) {
+	settingsFile, err := getSettingsFilePath()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var settings *Settings
+	settings, err = readSettingsFile(*settingsFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}
+
+func (a *App) SaveSettings(updatedSettings *Settings) error {
+	log.Printf("Saving settings file %v\n", *updatedSettings)
+	settings, err := a.GetSettings()
+	if err != nil {
+		return err
+	}
+
+	settings.DownloadPath = updatedSettings.DownloadPath
+	settings.UserName = updatedSettings.UserName
+
+	data, err := json.MarshalIndent(updatedSettings, "", "  ")
+	if err != nil {
+		return err
+	}
+	settingsFilePath, err := getSettingsFilePath()
+
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(*settingsFilePath, data, 0600)
+
+	if err != nil {
+		log.Printf("Error while writing settings file %v\n", err)
+		return err
+	}
+
+	return nil
 }

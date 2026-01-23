@@ -41,7 +41,7 @@
                         <div class="peer-card-content">
                             <img id="selected-peer-image" src="src/assets/images/DefaultProfilePhoto.png" alt="avatar">
                             <div class="peer-card-info">
-                                <span id="selected-peer-name">No Peer Selected</span>
+                                <span id="selected-peer-name">No Peer is Selected</span>
                                 <span id="selected-peer-status">Select a peer from the sidebar</span>
                             </div>
                         </div>
@@ -81,6 +81,48 @@
     </div>
 
 </div>
+<!-- Settings Modal -->
+<!-- Settings Modal -->
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay">
+    <div class="settings-window">
+
+        <div class="settings-header">
+            <span>Settings</span>
+            <button id="close-settings" class="close-btn">✕</button>
+        </div>
+
+        <div class="settings-content">
+
+            <div class="settings-group">
+                <div class="group-title">General</div>
+
+                <div class="setting-row">
+                    <label for="userName">Username</label>
+                    <input type="text" id= "userName" placeholder="Enter your name">
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="group-title">Transfers</div>
+
+                <div class="setting-row">
+                    <label for="downloadPath" >Download location</label>
+                    <input type="text" id="downloadPath" value="/home/user/Downloads" readonly>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="settings-footer">
+            <button class="btn ghost">Cancel</button>
+            <button class="btn primary" id="saveSettingsButton">Save</button>
+        </div>
+
+    </div>
+</div>
+
+
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
