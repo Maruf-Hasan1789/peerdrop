@@ -26,6 +26,10 @@ export function OnPeerRemoved(arg1) {
   return window['go']['app']['App']['OnPeerRemoved'](arg1);
 }
 
+export function PickDownloadFolder() {
+  return window['go']['app']['App']['PickDownloadFolder']();
+}
+
 export function PickFile() {
   return window['go']['app']['App']['PickFile']();
 }

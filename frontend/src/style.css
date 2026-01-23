@@ -321,7 +321,7 @@ body, html {
 
 /* Window */
 .settings-window {
-    width: 420px;
+    width: 600px;
     background: #f6f6f6;
     color: #222;
     border-radius: 8px;
@@ -423,4 +423,20 @@ body, html {
     border: none;
     font-size: 16px;
     cursor: pointer;
+}
+
+
+.path-picker{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+#downloadPath{
+    flex:1;
+    padding: 8px 10px;
+}
+
+#folderPicker {
+    padding: 8px 14px;
+    white-space: nowrap;
 }
