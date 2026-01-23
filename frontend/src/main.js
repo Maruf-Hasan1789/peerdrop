@@ -8,12 +8,12 @@ console.log("🔥 imports resolved");
 
 const peerListEl = document.getElementById("peer-list");
 const refreshBtn = document.getElementById("refresh-btn");
-const sendFileButton = document.getElementById("send-btn")
-const receiverSelect = document.getElementById("receiver-select")
-const pickFile = document.getElementById("pick-file")
-const fileName = document.getElementById("file-name")
+const sendFileButton = document.getElementById("send-btn");
+const pickFile = document.getElementById("pick-file");
+const fileName = document.getElementById("file-name");
+const clearSelection = document.getElementById("clear-selection");
 let filePath =  "";
-
+const receiverSelect = document.getElementById("receiver-select");
 // Local Map to store peers
 const peersMap = new Map();
 
@@ -36,34 +36,27 @@ function updatePeerListUI() {
 
     // Clear the list and the dropdown
     peerListEl.innerHTML = '';
-    receiverSelect.innerHTML = '<option value="" disabled selected>Select a peer</option>';
 
     peersMap.forEach(peer => {
         // --- Right sidebar list ---
         const li = document.createElement("li");
-        li.textContent = `${peer.name} (${peer.id}) - Port: ${peer.port}`;
+        //li.textContent = `${peer.name} (${peer.id}) - Port: ${peer.port}`;
         li.classList.add("peer-item");
+        li.dataset.peerId = peer.id;
+        li.innerHTML = `<strong>${peer.name}</strong><br>
+                        <small>Port ${peer.port}</small>`
 
         // Click to highlight in sidebar
         li.addEventListener("click", () => {
             document.querySelectorAll("#peer-list li").forEach(el => el.classList.remove("selected"));
             li.classList.add("selected");
 
-            // Set the dropdown to this peer
-            receiverSelect.value = peer.id;
+           renderSelectedPeer(peer)
         });
 
         peerListEl.appendChild(li);
-
-        // --- Dropdown option ---
-        const option = document.createElement("option");
-        option.value = peer.id;
-        option.textContent = peer.name;
-        receiverSelect.appendChild(option);
     });
 }
-
-
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -111,14 +104,16 @@ EventsOn("wails:file-drop", (x,y,paths) =>{
 
 sendFileButton.addEventListener("click", async (event) => {
     event.preventDefault();
-
+    console.log("Send Button is selected");
     try {
         // Open native file dialog via Go
+        console.log("filePath", filePath);
         if(filePath === "") {
             console.error("File Path is not provided")
             return
         }
 
+        console.log("receiver ", receiverSelect.value, "filePath");
         // Send file to selected peer
         await SendFileToPeer(receiverSelect.value, filePath);
         sendFileButton.disabled = true;
@@ -154,3 +149,29 @@ function handleFileSelection(path) {
 
 console.log("Hello");
 updatePeerListUI();
+
+
+function renderSelectedPeer(peer) {
+    receiverSelect.value = peer.id;
+
+    document.getElementById("selected-peer-name").textContent = peer.name
+    document.getElementById("selected-peer-status").textContent = `Port ${peer.port} ${peer.id}`;
+
+   // if (peer.avatar) {
+       // document.getElementById("selected-peer-image").src = peer.avatar;
+  //  }
+
+    const card = document.getElementById("selected-peer-card")
+    card.classList.add("active");
+    document.getElementById("clear-selection").style.display = "flex";
+}
+
+clearSelection.addEventListener(("click"), () => {
+    document.getElementById("receiver-select").value = "";
+
+    document.getElementById("selected-peer-name").textContent = "No Peer Selected";
+    document.getElementById("selected-peer-status").textContent = "Selected a Peer from the sidebar";
+
+    document.querySelectorAll("#peer-list li")
+        .forEach(el => el.classList.remove("selected"));
+});

@@ -3,68 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <title>PeerDrop</title>
+    <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 <div id="container">
-    <div id="main-column">
-        <header class="main-header">
-            <h1>PeerDrop</h1>
-            <div class="header-actions">
-                <button class="icon-btn" id="history-toggle" title="Transfer History">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </button>
-                <button class="icon-btn" id="settings-toggle" title="Settings">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                </button>
-            </div>
-        </header>
 
-        <section class="transfer-section">
-            <h2>Send File</h2>
-            <div id="receiver-container">
-                <label for="receiver-select">Receiver</label>
-                <select id="receiver-select">
-                    <option value="" disabled selected>Select a peer</option>
-                </select>
-            </div>
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-left">
+            <img src="src/assets/images/DefaultProfilePhoto.png" alt="PeerDrop Icon" class="app-icon">
+            <span class="app-name">PeerDrop</span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="history-toggle" title="Transfer History">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </button>
+            <button class="icon-btn" id="settings-toggle" title="Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" >
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
 
-            <form id="upload-form">
-                <div id="drop-zone" class="drop-area">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5-5 5 5m-5-5v12"/></svg>
-                    <p>Drag & Drop File Here</p>
-                    <button type="button" id="pick-file">Browse File</button>
+    <!-- Main Columns -->
+    <div class="columns-wrapper">
+        <!-- Left / Main Column -->
+        <div id="main-column">
+            <section class="transfer-section">
+                <div id="receiver-container">
+                    <label>Selected Receiver</label>
+                    <input type="hidden" id="receiver-select" value="">
+                    <div id="selected-peer-card" class="empty-selection">
+                        <div class="peer-card-content">
+                            <img id="selected-peer-image" src="src/assets/images/DefaultProfilePhoto.png" alt="avatar">
+                            <div class="peer-card-info">
+                                <span id="selected-peer-name">No Peer Selected</span>
+                                <span id="selected-peer-status">Select a peer from the sidebar</span>
+                            </div>
+                        </div>
+                        <button type="button" id="clear-selection" style="display: none;">&times;</button>
+                    </div>
                 </div>
-                <div class="file-info-bar">
-                    <span id="file-name">No file selected</span>
-                    <button type="submit" id="send-btn" disabled>Send</button>
+
+                <form id="upload-form">
+                    <div id="drop-zone" class="drop-area">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5-5 5 5m-5-5v12"/>
+                        </svg>
+                        <p>Drag & Drop File Here</p>
+                        <button type="button" id="pick-file">Browse File</button>
+                    </div>
+                    <div class="file-info-bar">
+                        <span id="file-name">No file selected</span>
+                        <button type="submit" id="send-btn" disabled>Send</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="ongoing-transfers">
+                <div class="section-header">
+                    <h2>Live Transfers</h2>
+                    <span id="transfer-count" class="badge">0</span>
                 </div>
-            </form>
-        </section>
-    </div>
+                <div id="transfer-list"></div>
+            </section>
+        </div>
 
-    <div id="sidebar-column">
-        <h3>Connected Peers</h3>
-        <ul id="peer-list">
-        </ul>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <header>
-                <h3>Settings</h3>
-                <button class="close-modal">&times;</button>
-            </header>
-            <div class="settings-body">
-                <label>Username</label>
-                <input type="text" placeholder="Enter name">
-                <label>Download Path</label>
-                <input type="text" value="/home/user/Downloads" readonly>
-                <label>Network Interface</label>
-                <select><option>eth0 (192.168.1.5)</option></select>
-            </div>
-            <button class="save-btn">Save Changes</button>
+        <!-- Right / Sidebar Column -->
+        <div id="sidebar-column">
+            <h3>Connected Peers</h3>
+            <ul id="peer-list"></ul>
         </div>
     </div>
+
 </div>
 <script type="module" src="src/main.js"></script>
 </body>
