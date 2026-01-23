@@ -19,6 +19,7 @@ func New() *Discovery {
 }
 
 func (d *Discovery) addOrUpdatePeer(p *Peer) {
+	log.Printf("Add or update Peer %v\n", p)
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.peers[p.ID] = p
@@ -48,7 +49,7 @@ func (d *Discovery) NotifyOnPeerAdd(peer Peer) {
 }
 
 func (d *Discovery) GetPeerById(peerId string) *Peer {
-	log.Printf("GetPeerById\n")
+	log.Printf("GetPeerById %v\n", peerId)
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

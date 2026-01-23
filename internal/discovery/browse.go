@@ -40,6 +40,7 @@ func (d *Discovery) consumeEntries(ctx context.Context, entries <-chan *zeroconf
 
 			log.Printf("New  Peer: %v \n", peer)
 			d.addOrUpdatePeer(peer)
+			log.Printf("Add or update Peer Below %v\n", peer)
 			d.NotifyOnPeerAdd(*peer)
 		}
 	}

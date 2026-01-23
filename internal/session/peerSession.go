@@ -37,7 +37,7 @@ type PeerSession struct {
 	fileReceivedListeners []func(name string)
 
 	//message handlers map
-	handlers map[string]func(msg protocol.Message)
+	handlers map[string]func(msg protocol.Message, downloadPath string)
 }
 
 func NewPeerSession(conn transport.Connection) *PeerSession {
@@ -46,7 +46,7 @@ func NewPeerSession(conn transport.Connection) *PeerSession {
 		peer:        conn.PeerInfo(),
 		done:        make(chan struct{}),
 		connectedAt: time.Now(),
-		handlers:    make(map[string]func(msg protocol.Message)),
+		handlers:    make(map[string]func(msg protocol.Message, downloadPath string)),
 	}
 
 	p.handlers["file"] = p.handleFile
@@ -55,8 +55,8 @@ func NewPeerSession(conn transport.Connection) *PeerSession {
 	return p
 }
 
-func (p *PeerSession) Start() {
-	go p.readLoop()
+func (p *PeerSession) Start(downloadPath string) {
+	go p.readLoop(downloadPath)
 }
 
 func (p *PeerSession) Stop() error {
@@ -81,7 +81,7 @@ func (p *PeerSession) OnFileReceived(fn func(name string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
-func (p *PeerSession) readLoop() {
+func (p *PeerSession) readLoop(downloadPath string) {
 	defer close(p.done)
 
 	for {
@@ -93,11 +93,11 @@ func (p *PeerSession) readLoop() {
 		}
 
 		p.lastSeen = time.Now()
-		p.handleMessage(data)
+		p.handleMessage(data, downloadPath)
 	}
 }
 
-func (p *PeerSession) handleMessage(data []byte) {
+func (p *PeerSession) handleMessage(data []byte, downloadPath string) {
 	var msg protocol.Message
 
 	if err := json.Unmarshal(data, &msg); err != nil {
@@ -110,7 +110,7 @@ func (p *PeerSession) handleMessage(data []byte) {
 	handler, ok := p.handlers[msg.Type]
 
 	if ok {
-		handler(msg)
+		handler(msg, downloadPath)
 	} else {
 		if p.onError != nil {
 			p.onError(fmt.Errorf("unknown message type: %s", msg.Type))
@@ -118,15 +118,15 @@ func (p *PeerSession) handleMessage(data []byte) {
 	}
 }
 
-func (p *PeerSession) handleText(msg protocol.Message) {
+func (p *PeerSession) handleText(msg protocol.Message, downloadPath string) {
 	log.Printf("Peer says: %v", string(msg.Data))
 }
 
-func (p *PeerSession) handleFile(msg protocol.Message) {
+func (p *PeerSession) handleFile(msg protocol.Message, downloadPath string) {
 
 	fileName := filepath.Base(msg.Name)
 
-	if err := os.WriteFile(fileName, msg.Data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(downloadPath, fileName), msg.Data, 0644); err != nil {
 		if p.onError != nil {
 			p.onError(fmt.Errorf("cannot save file: %w", err))
 		}
@@ -218,7 +218,7 @@ func (p *PeerSession) SendLargeFile(path string, chunkSize int) error {
 	return nil
 }
 
-func (p *PeerSession) handleChunk(msg protocol.Message) {
+func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 	f, ok := incomingFiles[msg.Name]
 
 	if !ok {
@@ -245,7 +245,9 @@ func (p *PeerSession) handleChunk(msg protocol.Message) {
 	if complete {
 		fileName := filepath.Base(msg.Name)
 
-		outFile, _ := os.Create(fileName)
+		log.Printf("FileName: %v\n", fileName)
+
+		outFile, _ := os.Create(filepath.Join(downloadPath, fileName))
 
 		for _, chunk := range f.received {
 			outFile.Write(chunk)

@@ -24,7 +24,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		log.Printf("Session error %v\n", err)
 	})
 
-	peerSession.Start()
-	
+	peerSession.Start(a.settings.DownloadPath)
+
 	<-peerSession.Done()
 }
