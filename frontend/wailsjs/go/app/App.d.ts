@@ -18,6 +18,8 @@ export function OnPeerAdded(arg1:discovery.Peer):Promise<void>;
 
 export function OnPeerRemoved(arg1:discovery.Peer):Promise<void>;
 
+export function PickDownloadFolder():Promise<string>;
+
 export function PickFile():Promise<string>;
 
 export function RegisterSession(arg1:session.PeerSession):Promise<void>;

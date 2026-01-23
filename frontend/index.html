@@ -108,14 +108,17 @@
 
                 <div class="setting-row">
                     <label for="downloadPath" >Download location</label>
-                    <input type="text" id="downloadPath" value="/home/user/Downloads" readonly>
+                    <div class="path-picker">
+                        <input type="text" id="downloadPath" value="/home/user/Downloads" readonly>
+                        <button id="folderPicker">Browse</button>
+                    </div>
                 </div>
             </div>
 
         </div>
 
         <div class="settings-footer">
-            <button class="btn ghost">Cancel</button>
+            <button class="btn cancel" id = "settingsCancelButton">Cancel</button>
             <button class="btn primary" id="saveSettingsButton">Save</button>
         </div>
 

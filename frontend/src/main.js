@@ -1,7 +1,7 @@
 console.log("🔥 frontend main.js loaded");
 import './style.css'
 
-import {ListPeers, SendFileToPeer, PickFile, GetSettings, SaveSettings} from '../wailsjs/go/app/App';
+import {ListPeers, SendFileToPeer, PickFile, GetSettings, SaveSettings, PickDownloadFolder} from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
 
 
@@ -19,7 +19,8 @@ const closeSettingsButton = document.getElementById("close-settings");
 const saveSettingsBtn = document.getElementById("saveSettingsButton");
 const userName = document.getElementById("userName");
 const downloadPath = document.getElementById("downloadPath");
-
+const folderPicker = document.getElementById("folderPicker");
+const cancelSettingsBtn = document.getElementById("settingsCancelButton");
 let originalSettings = {};
 
 async function loadSettings() {
@@ -37,7 +38,10 @@ async function loadSettings() {
     }
 }
 
-loadSettings();
+loadSettings().then(r =>
+    console.log("Settings is loaded")
+);
+
 // Local Map to store peers
 const peersMap = new Map();
 
@@ -235,4 +239,21 @@ saveSettingsBtn.addEventListener("click", async () => {
     } catch (err) {
         console.error("Failed to save settings")
     }
+});
+
+
+
+folderPicker.addEventListener("click", async () => {
+    try {
+        downloadPath.value = await PickDownloadFolder();
+    }catch (e) {
+        console.log("Error while setting download directory")
+        alert("Error while setting download directory")
+    }
+});
+
+cancelSettingsBtn.addEventListener("click",  () => {
+    console.log("Original Settings", originalSettings)
+    userName.value = originalSettings.user_name;
+    downloadPath.value = originalSettings.download_path;
 });

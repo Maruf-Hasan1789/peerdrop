@@ -201,3 +201,15 @@ func (a *App) SaveSettings(updatedSettings *Settings) error {
 
 	return nil
 }
+
+func (a *App) PickDownloadFolder() (string, error) {
+	dialog, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select a folder to set as download directory",
+	})
+
+	if err != nil {
+		return "", err
+	}
+	log.Printf("Dialog %v\n", dialog)
+	return dialog, err
+}
