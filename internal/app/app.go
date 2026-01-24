@@ -27,23 +27,15 @@ func NewApp(d *discovery.Discovery) *App {
 	}
 }
 
-func (a *App) Startup(ctx context.Context) {
+func (a *App) Startup(ctx context.Context, settings *Settings) {
 	a.ctx = ctx
-	settings, err := loadOrCreateSettings()
+	a.settings = settings
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sentHistories, err := loadOrCreateSentTransferHistory()
+	_, err := loadOrCreateSentTransferHistory()
 
 	if err != nil {
 		log.Printf("Error loading sent transfer history: %v", err)
 	}
-
-	a.settings = settings
-
-	log.Printf("Loading sent transfer history%v\n", sentHistories)
 }
 
 func (a *App) Name(name string) string {
@@ -54,22 +46,20 @@ func (a *App) Name(name string) string {
 
 func (a *App) bindSession(p *session.PeerSession) {
 
-	peer := p.GetPeerInfo()
+	//peer := p.GetPeerInfo()
 
-	if a.ctx != nil {
-		log.Printf("peer connected %v\n", peer)
-		runtime.EventsEmit(a.ctx, "peer-connected", map[string]interface{}{
-			"id":   peer.ID,
-			"name": peer.Name,
-			"port": peer.Port,
-		})
+	/*((if a.ctx != nil {
+		log.Printf("peer connected in bind session %v\n", peer)
+		runtime.EventsEmit(a.ctx, "peer-connected", discovery.ToPeerDTO(peer))
 	}
+
+	*/
 
 	p.OnFileReceived(func(name string) {
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
 				"name": name,
-				"peer": p.GetPeerInfo().Name,
+				"peer": p.GetPeerInfo().UserName,
 			})
 		}
 	})
@@ -240,6 +230,6 @@ func (a *App) GetTransferHistories() []transferHistory {
 		log.Printf("Error loading sent transfer history: %v\n", err)
 		return nil
 	}
-	
+
 	return sentHistories
 }

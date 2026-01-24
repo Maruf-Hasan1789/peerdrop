@@ -33,8 +33,6 @@ func loadOrCreateSentTransferHistory() ([]transferHistory, error) {
 		return nil, err
 	}
 
-	log.Printf("SentHistory File %v", sentHistoryFile)
-
 	if _, err := os.Stat(sentHistoryFile); os.IsNotExist(err) {
 		log.Printf("Sent transfer history not found")
 		err := os.WriteFile(sentHistoryFile, []byte("[]"), 0644)
@@ -50,7 +48,6 @@ func loadOrCreateSentTransferHistory() ([]transferHistory, error) {
 		log.Printf("Error loading sent transfer history: %v", err)
 		return nil, err
 	}
-	log.Infof("Sent transfer history: %v", sentFilesHistory)
 
 	return sentFilesHistory, nil
 }
@@ -88,8 +85,6 @@ func getHistoryFilePath() (string, error) {
 	}
 
 	historyFile := filepath.Join(transferConfigDir, "sent_transfer_history.json")
-
-	log.Printf("History file: %v", historyFile)
 
 	return historyFile, nil
 }

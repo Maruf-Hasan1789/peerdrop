@@ -50,6 +50,6 @@ export function SendFileToPeer(arg1, arg2) {
   return window['go']['app']['App']['SendFileToPeer'](arg1, arg2);
 }
 
-export function Startup(arg1) {
-  return window['go']['app']['App']['Startup'](arg1);
+export function Startup(arg1, arg2) {
+  return window['go']['app']['App']['Startup'](arg1, arg2);
 }

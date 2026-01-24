@@ -14,7 +14,7 @@ type Settings struct {
 	DownloadPath string `json:"download_path"`
 }
 
-func loadOrCreateSettings() (*Settings, error) {
+func LoadOrCreateSettings() (*Settings, error) {
 	log.Info("Loading settings")
 	settingsFile, err := getSettingsFilePath()
 
