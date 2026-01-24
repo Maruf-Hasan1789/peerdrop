@@ -33,9 +33,23 @@ func main() {
 
 	d := discovery.New()
 
+	settings, err := app.LoadOrCreateSettings()
+
+	if err != nil {
+		log.Printf("Error loading settings: %v", err)
+	}
+	var userName string
+
+	if settings.UserName == "" {
+		userName = selfPeer.Name
+	} else {
+		userName = settings.UserName
+	}
+	
+	selfPeer.UserName = userName
 	//start registering
 	go func() {
-		if err := d.Register(ctx, selfPeer); err != nil {
+		if err := d.Register(ctx, selfPeer, userName); err != nil {
 			log.Println(err)
 			cancel()
 		}
@@ -75,7 +89,7 @@ func main() {
 		Width:  1920,
 		Height: 1080,
 		OnStartup: func(ctx context.Context) {
-			wailsApp.Startup(ctx)
+			wailsApp.Startup(ctx, settings)
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,

@@ -44,7 +44,7 @@ const ongoingTransfers = new Map();
 async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
-        console.log('Loaded settings:', settings);
+        //console.log('Loaded settings:', settings);
         originalSettings = {...settings}
 
         // Populate inputs
@@ -71,6 +71,7 @@ const peersMap = new Map();
 async function fetchPeers() {
     try {
         const peers = await ListPeers();
+        console.log("Peer From Backend " + peers)
         peersMap.clear();
         peers.forEach(peer => peersMap.set(peer.id, peer));
         updatePeerListUI();
@@ -93,7 +94,10 @@ function updatePeerListUI() {
         //li.textContent = `${peer.name} (${peer.id}) - Port: ${peer.port}`;
         li.classList.add("peer-item");
         li.dataset.peerId = peer.id;
-        li.innerHTML = `<strong>${peer.name}</strong><br>
+
+        console.log("Peer "+ peer.id, peer.name, peer.user_name)
+
+        li.innerHTML = `<strong>${peer.user_name}</strong><br>
                         <small>Port ${peer.port}</small>`
 
         // Click to highlight in sidebar
@@ -113,7 +117,7 @@ async function loadTransferHistory() {
     sentTransferHistoryList.innerHTML = "";
 
     const sentFileHistories = await GetTransferHistories();
-    console.log("Sent File Histories", sentFileHistories);
+    //console.log("Sent File Histories", sentFileHistories);
     sentFileHistories.forEach(sentFile => {
         const li = document.createElement("li");
         li.classList.add("history-item");
@@ -162,17 +166,14 @@ window.addEventListener('drop', (e) => e.preventDefault());
 EventsOn("peer-connected", (peer) => {
     console.log("Peer Added from frontend")
     peersMap.set(peer.id, peer);
-    updatePeerListUI()
-    console.log(`[CONNECTED] ${peer.name} (${peer.id}) : ${peer.port}`);
+    updatePeerListUI();
+    console.log(`[CONNECTED] ${peer.user_name} (${peer.id}) : ${peer.port}`);
 });
 
 EventsOn("peer-disconnected", (peer) => {
     peersMap.delete(peer.id);
-    fetchPeers().then(r => {
-        console.log(r)
-    });
-
-    console.log(`[DISCONNECTED] ${peer.name} (${peer.id})`);
+    fetchPeers().then(r => console.log("fetching peers after disconnection"))
+    console.log(`[DISCONNECTED] ${peer.user_name} (${peer.id})`);
 });
 
 EventsOn("file-received", (data) => {
@@ -246,7 +247,7 @@ updatePeerListUI();
 function renderSelectedPeer(peer) {
     receiverSelect.value = peer.id;
 
-    document.getElementById("selected-peer-name").textContent = peer.name
+    document.getElementById("selected-peer-name").textContent = peer.user_name
     document.getElementById("selected-peer-status").textContent = `Port ${peer.port} ${peer.id}`;
 
    // if (peer.avatar) {

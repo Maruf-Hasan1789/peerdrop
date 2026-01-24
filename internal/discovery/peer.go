@@ -9,6 +9,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/utils"
 	"github.com/grandcat/zeroconf"
+	"github.com/labstack/gommon/log"
 )
 
 type ActivePeers struct {
@@ -21,6 +22,7 @@ type Peer struct {
 	Addresses []net.IP
 	Port      int
 	Version   string
+	UserName  string
 }
 
 type PeerDTO struct {
@@ -29,6 +31,7 @@ type PeerDTO struct {
 	Addresses []string `json:"addresses"`
 	Port      int      `json:"port"`
 	Version   string   `json:"version"`
+	UserName  string   `json:"user_name"`
 }
 
 func ToPeerDTO(p Peer) PeerDTO {
@@ -43,17 +46,35 @@ func ToPeerDTO(p Peer) PeerDTO {
 		Addresses: addrs,
 		Port:      p.Port,
 		Version:   p.Version,
+		UserName:  p.UserName,
 	}
 }
 
 func NewPeerFromEntry(e *zeroconf.ServiceEntry) *Peer {
+	log.Printf("NewPeerFromEntry %v\n", e.Text)
+	userName := parseUserName(e.Text)
+
+	if len(userName) == 0 {
+		userName = e.Instance
+	}
 	return &Peer{
 		ID:        peerID(e.Instance),
 		Name:      e.Instance,
 		Addresses: append(e.AddrIPv4, e.AddrIPv6...),
 		Port:      e.Port,
 		Version:   parseVersion(e.Text),
+		UserName:  userName,
 	}
+}
+
+func parseUserName(text []string) string {
+	for _, t := range text {
+		if strings.HasPrefix(t, "user_name=") {
+			return strings.TrimPrefix(t, "user_name=")
+		}
+	}
+
+	return ""
 }
 
 func peerID(instanceName string) string {

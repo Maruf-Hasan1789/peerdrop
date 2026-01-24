@@ -43,6 +43,7 @@ export namespace discovery {
 	    Addresses: number[][];
 	    Port: number;
 	    Version: string;
+	    UserName: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Peer(source);
@@ -55,6 +56,7 @@ export namespace discovery {
 	        this.Addresses = source["Addresses"];
 	        this.Port = source["Port"];
 	        this.Version = source["Version"];
+	        this.UserName = source["UserName"];
 	    }
 	}
 	export class PeerDTO {
@@ -63,6 +65,7 @@ export namespace discovery {
 	    addresses: string[];
 	    port: number;
 	    version: string;
+	    user_name: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new PeerDTO(source);
@@ -75,6 +78,7 @@ export namespace discovery {
 	        this.addresses = source["addresses"];
 	        this.port = source["port"];
 	        this.version = source["version"];
+	        this.user_name = source["user_name"];
 	    }
 	}
 
