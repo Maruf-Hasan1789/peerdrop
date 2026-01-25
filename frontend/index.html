@@ -105,43 +105,59 @@
 <div id="settings-modal" class="modal-overlay">
     <div class="settings-window">
 
+        <!-- Header -->
         <div class="settings-header">
             <span>Settings</span>
             <button id="close-settings" class="close-btn">✕</button>
         </div>
 
+        <!-- Content -->
         <div class="settings-content">
 
+            <!-- General Group -->
             <div class="settings-group">
                 <div class="group-title">General</div>
-
                 <div class="setting-row">
                     <label for="userName">Username</label>
-                    <input type="text" id= "userName" placeholder="Enter your name">
+                    <input type="text" id="userName" placeholder="Enter your name">
                 </div>
             </div>
 
+            <!-- Transfers Group -->
             <div class="settings-group">
                 <div class="group-title">Transfers</div>
 
+                <!-- Download Path -->
                 <div class="setting-row">
-                    <label for="downloadPath" >Download location</label>
+                    <label for="downloadPath">Download location</label>
                     <div class="path-picker">
                         <input type="text" id="downloadPath" value="/home/user/Downloads" readonly>
                         <button id="folderPicker">Browse</button>
                     </div>
                 </div>
+
+                <!-- Permission Toggle -->
+                <div class="setting-row">
+                    <label for="permissionToggle">Require permission to send files?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="permissionToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
             </div>
 
         </div>
 
+        <!-- Footer -->
         <div class="settings-footer">
-            <button class="btn cancel" id = "settingsCancelButton">Cancel</button>
+            <button class="btn cancel" id="settingsCancelButton">Cancel</button>
             <button class="btn primary" id="saveSettingsButton">Save</button>
         </div>
 
     </div>
 </div>
+
 
 <!-- Transfer History Modal -->
 <div id="transfer-history-modal" class="modal-overlay">

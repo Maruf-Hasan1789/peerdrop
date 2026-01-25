@@ -184,7 +184,7 @@ func (a *App) GetSettings() (*Settings, error) {
 }
 
 func (a *App) SaveSettings(updatedSettings *Settings) error {
-	log.Printf("Saving settings file %v\n", *updatedSettings)
+	log.Printf("Saving settings file %v\n", updatedSettings.IsPermissionRequiredToSendFiles)
 	settings, err := a.GetSettings()
 	if err != nil {
 		return err
@@ -192,6 +192,7 @@ func (a *App) SaveSettings(updatedSettings *Settings) error {
 
 	settings.DownloadPath = updatedSettings.DownloadPath
 	settings.UserName = updatedSettings.UserName
+	settings.IsPermissionRequiredToSendFiles = updatedSettings.IsPermissionRequiredToSendFiles
 
 	data, err := json.MarshalIndent(updatedSettings, "", "  ")
 	if err != nil {

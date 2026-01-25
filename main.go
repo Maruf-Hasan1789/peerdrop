@@ -72,7 +72,7 @@ func main() {
 	wailsApp = app.NewApp(d)
 	d.AddObserver(wailsApp)
 
-	permissionManager := app.NewPermissionManager()
+	permissionManager := app.NewPermissionManager(settings)
 	handshakeOptions := &protocol.HandshakeOptions{
 		PermissionFunc: permissionManager.Request,
 	}

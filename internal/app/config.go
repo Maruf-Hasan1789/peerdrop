@@ -10,8 +10,9 @@ import (
 )
 
 type Settings struct {
-	UserName     string `json:"user_name"`
-	DownloadPath string `json:"download_path"`
+	UserName                        string `json:"user_name"`
+	DownloadPath                    string `json:"download_path"`
+	IsPermissionRequiredToSendFiles bool   `json:"is_permission_required_to_send_files"`
 }
 
 func LoadOrCreateSettings() (*Settings, error) {
@@ -27,8 +28,9 @@ func LoadOrCreateSettings() (*Settings, error) {
 
 	if _, err = os.Stat(*settingsFile); os.IsNotExist(err) {
 		settings = &Settings{
-			UserName:     "User",
-			DownloadPath: filepath.Join(os.Getenv("HOME"), "Downloads"),
+			UserName:                        "User",
+			DownloadPath:                    filepath.Join(os.Getenv("HOME"), "Downloads"),
+			IsPermissionRequiredToSendFiles: false,
 		}
 
 		data, err := json.MarshalIndent(settings, "", "  ")

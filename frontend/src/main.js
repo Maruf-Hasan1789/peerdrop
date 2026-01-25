@@ -37,6 +37,7 @@ const transferHistoryBtn = document.getElementById("history-toggle");
 const transferHistoryModal =  document.getElementById("transfer-history-modal");
 const closeTransferHistoryModal = document.getElementById("close-transfer-history");
 const sentTransferHistoryList = document.getElementById("sent-history-list");
+const permissionRequired = document.getElementById('permissionToggle');
 
 // Keep track of ongoing transfers
 const ongoingTransfers = new Map();
@@ -51,6 +52,7 @@ async function loadSettings() {
         // Populate inputs
         userName.value = settings.user_name || '';
         downloadPath.value = settings.download_path || '/home/user/Downloads';
+        permissionRequired.checked = settings.is_permission_required_to_send_files;
 
     } catch (err) {
         console.error("Failed to load settings:", err);
@@ -264,7 +266,8 @@ function renderSelectedPeer(peer) {
 function hasSettingsChanged() {
     const currentSettings = {
         user_name : userName.value,
-        download_path: downloadPath.value
+        download_path: downloadPath.value,
+        is_permission_required_to_send_files : permissionRequired.checked
     };
 
     return Object.keys(currentSettings).some(key=> currentSettings[key] !== originalSettings[key]);
@@ -294,14 +297,18 @@ closeSettingsButton.addEventListener("click", () => {
 saveSettingsBtn.addEventListener("click", async () => {
     const updatedSettings = {
         user_name : userName.value,
-        download_path : downloadPath.value
+        download_path : downloadPath.value,
+        is_permission_required_to_send_files : permissionRequired.checked
     };
+
+    console.log("Updated Settings", updatedSettings)
 
     try {
         console.log(updatedSettings)
         await SaveSettings(updatedSettings)
         originalSettings = {...updatedSettings}
         alert("Settings saved successfully")
+        loadSettings().then(r=> console.log("Settings loaded"))
     } catch (err) {
         console.error("Failed to save settings")
     }
@@ -322,6 +329,8 @@ cancelSettingsBtn.addEventListener("click",  () => {
     console.log("Original Settings", originalSettings)
     userName.value = originalSettings.user_name;
     downloadPath.value = originalSettings.download_path;
+    permissionRequired.checked = originalSettings.is_permission_required_to_send_files;
+    settingsModal.style.display = "none";
 });
 
 // --- Function to create a new transfer card ---
@@ -403,7 +412,7 @@ function updateProgress(id, progress) {
 
 // --- Update transfer count ---
 function updateTransferCount() {
-    transferCountEl.textContent = ongoingTransfers.size;
+    transferCountEl.textContent = ongoingTransfers.size.toString();
 }
 
 // --- Event Listeners from backend ---
