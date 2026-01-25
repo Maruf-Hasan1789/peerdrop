@@ -15,6 +15,7 @@ export namespace app {
 	export class Settings {
 	    user_name: string;
 	    download_path: string;
+	    is_permission_required_to_send_files: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -24,6 +25,7 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.user_name = source["user_name"];
 	        this.download_path = source["download_path"];
+	        this.is_permission_required_to_send_files = source["is_permission_required_to_send_files"];
 	    }
 	}
 	export class transferHistory {

@@ -11,14 +11,22 @@ import (
 
 type PermissionManager struct {
 	responses sync.Map
+	settings  *Settings
 }
 
-func NewPermissionManager() *PermissionManager {
-	return &PermissionManager{}
+func NewPermissionManager(settings *Settings) *PermissionManager {
+	return &PermissionManager{
+		settings: settings,
+	}
 }
 
 func (manager *PermissionManager) Request(ctx context.Context, senderInfo discovery.SenderInfo) (bool, error) {
 	log.Info("Request from", senderInfo)
+
+	if !manager.settings.IsPermissionRequiredToSendFiles {
+		return true, nil
+	}
+
 	ch := make(chan bool, 1)
 	log.Printf("Permission Manager pointer in Request %p\n", manager)
 	manager.responses.Store(senderInfo.ID, ch)
