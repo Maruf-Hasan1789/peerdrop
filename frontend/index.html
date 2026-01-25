@@ -167,6 +167,32 @@
     </div>
 </div>
 
+<div id="permission-modal" class="pm-overlay" style="display:none">
+    <div class="pm-card" role="dialog" aria-modal="true">
+        <div class="pm-header">
+            <div class="pm-avatar">📁</div>
+            <div class="pm-title">
+                <h2>Incoming File Transfer</h2>
+                <p class="pm-subtitle">Permission required</p>
+            </div>
+        </div>
+
+        <div class="pm-body">
+            <p class="message"></p>
+
+            <div class="pm-files-wrapper">
+                <ul class="pm-files"></ul>
+            </div>
+        </div>
+
+        <div class="pm-footer">
+            <button id="deny-btn" class="pm-btn pm-btn-deny">Deny</button>
+            <button id="allow-btn" class="pm-btn pm-btn-allow">Allow</button>
+        </div>
+    </div>
+</div>
+
+
 
 <script type="module" src="src/main.js"></script>
 </body>

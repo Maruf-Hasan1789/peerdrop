@@ -8,7 +8,8 @@ import {
     GetSettings,
     SaveSettings,
     PickDownloadFolder,
-    GetTransferHistories
+    GetTransferHistories,
+    HandshakePermission
 } from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
 
@@ -421,6 +422,40 @@ EventsOn("transfer-complete", (payload) => {
     console.log(payload);
     updateProgress(payload.id, 100);
 });
+
+EventsOn("permission-request",  (senderInfo) => {
+   console.log(senderInfo);
+   showPermissionPopup(senderInfo)
+});
+
+
+function showPermissionPopup(sender) {
+    const modal = document.getElementById("permission-modal");
+    const message = modal.querySelector(".message");
+    const fileList = modal.querySelector(".pm-files");
+
+    message.textContent = `${sender.user_name} wants to send you the following files:`;
+
+    fileList.innerHTML = "";
+    sender.files.forEach(file => {
+        const li = document.createElement("li");
+        li.textContent = file;
+        fileList.appendChild(li);
+    });
+
+    modal.style.display = "flex";
+
+    document.getElementById("allow-btn").onclick = () => {
+        HandshakePermission(sender.ID, true).then(r => console.log("Permission granted"));
+        modal.style.display = "none";
+    };
+
+    document.getElementById("deny-btn").onclick = () => {
+        HandshakePermission(sender.ID, false).then(r => console.log("Permission denied"));
+        modal.style.display = "none";
+    };
+}
+
 
 
 transferHistoryBtn.addEventListener("click", () => {

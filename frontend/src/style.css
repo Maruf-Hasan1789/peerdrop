@@ -696,3 +696,152 @@ body, html {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+
+/* Overlay */
+.pm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 18, 25, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Card */
+.pm-card {
+    width: 420px;
+    max-width: 90%;
+    background: #1e2230;
+    color: #e5e7eb;
+    border-radius: 14px;
+    box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+    animation: pm-fade-in 0.18s ease-out;
+}
+
+/* Header */
+.pm-header {
+    display: flex;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pm-avatar {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.pm-title h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pm-subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* Body */
+.pm-body {
+    padding: 16px 20px;
+}
+
+.message {
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* File list */
+.pm-files-wrapper {
+    max-height: 140px;
+    overflow-y: auto;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 8px;
+}
+
+.pm-files {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pm-files li {
+    font-size: 13px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: #d1d5db;
+}
+
+.pm-files li:not(:last-child) {
+    margin-bottom: 4px;
+}
+
+.pm-files li::before {
+    content: "📄";
+    margin-right: 6px;
+}
+
+/* Footer */
+.pm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Buttons */
+.pm-btn {
+    min-width: 90px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.pm-btn:active {
+    transform: translateY(1px);
+}
+
+.pm-btn-deny {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e5e7eb;
+}
+
+.pm-btn-deny:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.pm-btn-allow {
+    background: #2563eb;
+    color: white;
+}
+
+.pm-btn-allow:hover {
+    background: #1d4ed8;
+}
+
+/* Animation */
+@keyframes pm-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

@@ -7,27 +7,47 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
 type Hello struct {
-	ID      string
-	Name    string
-	Port    int
-	Version string
+	ID       string
+	Name     string
+	Port     int
+	Version  string
+	UserName string
+	Files    []string
 }
 
-func handshake(ctx context.Context, conn *tcpConnection, self *discovery.Peer) error {
+type PermissionResponse struct {
+	Allowed bool
+	Code    PermissionCode
+	Message string
+}
 
-	_ = conn.conn.SetDeadline(time.Now().Add(5 * time.Second))
+type PermissionCode int
+
+const (
+	PermOK PermissionCode = iota
+	PermDeniedByUser
+	PermPolicyDenied
+	PermVersionMismatch
+	PermBusy
+)
+
+func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, options *protocol.HandshakeOptions) error {
+	log.Printf("Here in handshake\n")
+	_ = conn.conn.SetDeadline(time.Now().Add(30 * time.Second))
 
 	defer conn.conn.SetDeadline(time.Time{})
 
 	//send hello
 	if conn.role == outbound {
-		if err := sendHello(conn.conn, self); err != nil {
+		if err := sendHello(ctx, conn.conn, peer, options); err != nil {
 			return err
 		}
 	}
@@ -35,19 +55,70 @@ func handshake(ctx context.Context, conn *tcpConnection, self *discovery.Peer) e
 	//receive hello
 	remoteHello, err := receiveHello(conn.conn)
 
+	log.Printf("Received hello from %v\n", remoteHello)
 	if err != nil {
+		log.Printf("error receiving hello: %v", err)
 		return err
 	}
 
+	log.Printf("Remote Version = %v selfVersion = %v\n", remoteHello.Version, peer.Version)
+	if remoteHello.Version != peer.Version {
+		return fmt.Errorf("version mismatch")
+	}
+
 	if conn.role == inbound {
-		if err := sendHello(conn.conn, self); err != nil {
+		if err := sendHello(ctx, conn.conn, peer, options); err != nil {
 			return err
 		}
 	}
 
-	log.Printf("Remote Version = %v selfVersion = %v\n", remoteHello.Version, self.Version)
-	if remoteHello.Version != self.Version {
-		return fmt.Errorf("version mismatch")
+	log.Printf("Remote Hello %v", remoteHello)
+
+	if options.PermissionFunc != nil {
+		//receiver part
+		allowed, err := options.PermissionFunc(ctx, discovery.SenderInfo{
+			ID:       remoteHello.ID,
+			Name:     remoteHello.Name,
+			UserName: remoteHello.UserName,
+			Files:    []string{},
+		})
+
+		if err != nil {
+			log.Printf("error checking permissions: %v", err)
+			return err
+		}
+
+		if !allowed {
+			log.Printf("Permission denied by user\n")
+			permissionResponse := &PermissionResponse{
+				Allowed: false,
+				Code:    PermDeniedByUser,
+				Message: "Permission denied by user",
+			}
+
+			sendPermissionResponse(conn.conn, permissionResponse)
+		} else {
+			log.Printf("Permission granted by user\n")
+			permissionResponse := &PermissionResponse{
+				Allowed: true,
+				Code:    PermOK,
+				Message: "Permission granted by user",
+			}
+			sendPermissionResponse(conn.conn, permissionResponse)
+		}
+	} else {
+		//sender receives permission
+		permissionResponse, err := receivePermission(conn.conn)
+		if err != nil {
+			log.Printf("error receiving permission: %v", err)
+			return err
+		}
+		if !permissionResponse.Allowed {
+			log.Printf("Permission denied by user\n")
+			return fmt.Errorf("Permission denied by user\n")
+		}
+
+		log.Printf("Permission allowed by user\n")
 	}
 
 	conn.peer = discovery.Peer{
@@ -61,14 +132,35 @@ func handshake(ctx context.Context, conn *tcpConnection, self *discovery.Peer) e
 	return nil
 }
 
-func sendHello(w io.Writer, peer *discovery.Peer) error {
-	data, err := json.Marshal(Hello{
-		ID:      peer.ID,
-		Name:    peer.Name,
-		Port:    peer.Port,
-		Version: peer.Version,
-	})
+func receivePermission(conn net.Conn) (*PermissionResponse, error) {
+	data, err := readFrame(conn)
 
+	if err != nil {
+		return nil, err
+	}
+
+	var permissionResponse *PermissionResponse
+	if err := json.Unmarshal(data, &permissionResponse); err != nil {
+		return nil, err
+	}
+
+	return permissionResponse, nil
+}
+
+func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer, options *protocol.HandshakeOptions) error {
+	log.Printf("Sending Hello %v\n", peer)
+	hello := &Hello{
+		ID:       peer.ID,
+		Name:     peer.Name,
+		Port:     peer.Port,
+		Version:  peer.Version,
+		UserName: peer.UserName,
+		Files:    options.SendOptions.FileNames,
+	}
+
+	log.Printf("Marshalling Hello %v\n", hello)
+
+	data, err := json.Marshal(hello)
 	if err != nil {
 		return err
 	}
@@ -106,6 +198,7 @@ func readFrame(r io.Reader) ([]byte, error) {
 }
 
 func writeFrame(w io.Writer, payload []byte) error {
+	log.Printf("Writing Frame\n")
 	length := uint32(len(payload))
 
 	if err := binary.Write(w, binary.BigEndian, length); err != nil {
@@ -117,4 +210,15 @@ func writeFrame(w io.Writer, payload []byte) error {
 
 	log.Printf("Error while writing payload %v\n", err)
 	return err
+}
+
+func sendPermissionResponse(writer io.Writer, permissionResponse *PermissionResponse) {
+	data, err := json.Marshal(permissionResponse)
+	if err != nil {
+		log.Printf("Error while marshalling permission response: %v\n", err)
+	}
+
+	if err := writeFrame(writer, data); err != nil {
+		log.Printf("Error while writing frame: %v\n", err)
+	}
 }

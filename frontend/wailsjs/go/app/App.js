@@ -14,6 +14,10 @@ export function HandleConnection(arg1) {
   return window['go']['app']['App']['HandleConnection'](arg1);
 }
 
+export function HandshakePermission(arg1, arg2) {
+  return window['go']['app']['App']['HandshakePermission'](arg1, arg2);
+}
+
 export function ListPeers() {
   return window['go']['app']['App']['ListPeers']();
 }
@@ -50,6 +54,6 @@ export function SendFileToPeer(arg1, arg2) {
   return window['go']['app']['App']['SendFileToPeer'](arg1, arg2);
 }
 
-export function Startup(arg1, arg2) {
-  return window['go']['app']['App']['Startup'](arg1, arg2);
+export function Startup(arg1, arg2, arg3) {
+  return window['go']['app']['App']['Startup'](arg1, arg2, arg3);
 }

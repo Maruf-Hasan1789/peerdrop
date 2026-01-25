@@ -9,6 +9,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -45,7 +46,7 @@ func main() {
 	} else {
 		userName = settings.UserName
 	}
-	
+
 	selfPeer.UserName = userName
 	//start registering
 	go func() {
@@ -71,25 +72,30 @@ func main() {
 	wailsApp = app.NewApp(d)
 	d.AddObserver(wailsApp)
 
-	go func() {
-		for {
-			conn, err := listener.Accept(ctx, selfPeer)
-
-			if err != nil {
-				log.Printf("Error while getting connection from listener %v\n", err)
-				continue
-			}
-
-			go wailsApp.HandleConnection(conn)
-		}
-	}()
+	permissionManager := app.NewPermissionManager()
+	handshakeOptions := &protocol.HandshakeOptions{
+		PermissionFunc: permissionManager.Request,
+	}
 
 	err = wails.Run(&options.App{
 		Title:  "PeerDrop",
 		Width:  1920,
 		Height: 1080,
 		OnStartup: func(ctx context.Context) {
-			wailsApp.Startup(ctx, settings)
+			wailsApp.Startup(ctx, settings, permissionManager)
+
+			go func() {
+				for {
+					conn, err := listener.Accept(ctx, selfPeer, handshakeOptions)
+
+					if err != nil {
+						log.Printf("Error while getting connection from listener %v\n", err)
+						continue
+					}
+
+					go wailsApp.HandleConnection(conn)
+				}
+			}()
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
