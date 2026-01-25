@@ -14,9 +14,10 @@ import (
 )
 
 type App struct {
-	ctx       context.Context
-	discovery *discovery.Discovery
-	settings  *Settings
+	ctx               context.Context
+	discovery         *discovery.Discovery
+	settings          *Settings
+	permissionManager *PermissionManager
 }
 
 var sentHistories []transferHistory
@@ -27,10 +28,10 @@ func NewApp(d *discovery.Discovery) *App {
 	}
 }
 
-func (a *App) Startup(ctx context.Context, settings *Settings) {
+func (a *App) Startup(ctx context.Context, settings *Settings, permissionManager *PermissionManager) {
 	a.ctx = ctx
 	a.settings = settings
-
+	a.permissionManager = permissionManager
 	_, err := loadOrCreateSentTransferHistory()
 
 	if err != nil {
@@ -124,7 +125,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		log.Printf("Peer %v is selected by peer %v\n", peerId, peerInfo.Name)
 
 		dialer := &transport.Dialer{}
-		conn, err := dialer.Dial(*peerInfo, a.ctx)
+		conn, err := dialer.Dial(*peerInfo, a.ctx, filePath)
 
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
@@ -232,4 +233,8 @@ func (a *App) GetTransferHistories() []transferHistory {
 	}
 
 	return sentHistories
+}
+
+func (a *App) HandshakePermission(peerId string, allowed bool) {
+	a.permissionManager.Resolve(peerId, allowed)
 }

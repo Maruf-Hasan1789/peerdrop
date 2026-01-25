@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
 type Listener struct {
@@ -27,7 +28,7 @@ func NewListener(selfPeer *discovery.Peer) (*Listener, error) {
 	return &Listener{listener: listener}, nil
 }
 
-func (listener *Listener) Accept(ctx context.Context, selfPeer *discovery.Peer) (Connection, error) {
+func (listener *Listener) Accept(ctx context.Context, selfPeer *discovery.Peer, handshakeOptions *protocol.HandshakeOptions) (Connection, error) {
 	conn, err := listener.listener.Accept()
 
 	if err != nil {
@@ -41,7 +42,7 @@ func (listener *Listener) Accept(ctx context.Context, selfPeer *discovery.Peer) 
 		role: inbound,
 	}
 
-	err = handshake(ctx, tcpConnection, selfPeer)
+	err = handshake(ctx, tcpConnection, selfPeer, handshakeOptions)
 
 	return NewTCPConnection(conn, *selfPeer, inbound), nil
 }

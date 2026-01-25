@@ -11,6 +11,14 @@ type Discovery struct {
 	mu        sync.Mutex
 	observers []PeerObserver
 }
+type SenderInfo struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Addresses []string `json:"addresses"`
+	Port      string   `json:"port"`
+	UserName  string   `json:"user_name"`
+	Files     []string `json:"files"`
+}
 
 func New() *Discovery {
 	return &Discovery{

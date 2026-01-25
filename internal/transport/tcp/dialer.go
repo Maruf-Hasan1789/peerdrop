@@ -7,11 +7,12 @@ import (
 	"net"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
 type Dialer struct{}
 
-func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection, error) {
+func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, fileName string) (Connection, error) {
 
 	fmt.Printf("dialed peer %v %v\n", peer.Addresses[0], peer.Port)
 
@@ -28,8 +29,13 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection
 		peer: peer,
 		role: outbound,
 	}
+	handshakeOptions := protocol.HandshakeOptions{
+		SendOptions: protocol.SendOptions{
+			FileNames: []string{fileName},
+		},
+	}
 
-	if err := handshake(ctx, tcpConnection, &peer); err != nil {
+	if err := handshake(ctx, tcpConnection, &peer, &handshakeOptions); err != nil {
 		return nil, err
 	}
 
