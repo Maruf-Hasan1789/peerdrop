@@ -80,7 +80,7 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, o
 			ID:       remoteHello.ID,
 			Name:     remoteHello.Name,
 			UserName: remoteHello.UserName,
-			Files:    []string{},
+			Files:    remoteHello.Files,
 		})
 
 		if err != nil {

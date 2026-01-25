@@ -455,12 +455,12 @@ function showPermissionPopup(sender) {
     modal.style.display = "flex";
 
     document.getElementById("allow-btn").onclick = () => {
-        HandshakePermission(sender.ID, true).then(r => console.log("Permission granted"));
+        HandshakePermission(sender.id, true).then(r => console.log("Permission granted"));
         modal.style.display = "none";
     };
 
     document.getElementById("deny-btn").onclick = () => {
-        HandshakePermission(sender.ID, false).then(r => console.log("Permission denied"));
+        HandshakePermission(sender.id, false).then(r => console.log("Permission denied"));
         modal.style.display = "none";
     };
 }
