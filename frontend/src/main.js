@@ -448,6 +448,10 @@ EventsOn("permission-request",  (senderInfo) => {
    showPermissionPopup(senderInfo)
 });
 
+EventsOn("receiving-progress", (payload) => {
+   console.log(payload);
+});
+
 
 function showPermissionPopup(sender) {
     const modal = document.getElementById("permission-modal");
