@@ -208,6 +208,7 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		n, err := f.Read(buf)
 
 		if err != nil && err != io.EOF {
+			emitTransferFailedEvent(ctx, fileId, path)
 			return err
 		}
 
@@ -220,6 +221,7 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		}
 
 		if err := p.send(msg); err != nil {
+			emitTransferFailedEvent(ctx, fileId, path)
 			return err
 		}
 
@@ -236,6 +238,13 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		"file": path,
 	})
 	return nil
+}
+
+func emitTransferFailedEvent(ctx context.Context, fileId string, path string) {
+	runtime.EventsEmit(ctx, "transfer-failed", map[string]string{
+		"id":   fileId,
+		"file": path,
+	})
 }
 
 func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {

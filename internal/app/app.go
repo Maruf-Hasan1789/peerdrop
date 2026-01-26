@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
+	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -138,7 +138,9 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 
 	err := selectedPeerSession.SendLargeFile(a.ctx, filePath, 1024*1024)
 	if err != nil {
-		log.Printf("Error while creating connection during dialing %v\n", err)
+		_ = selectedPeerSession.Stop()
+		delete(peerSessions, peerId)
+		log.Printf("Error while creating connection during dialing in send Large File %v\n", err)
 		return fmt.Errorf("Error while creating connection during dialing %v\n", err)
 	}
 
