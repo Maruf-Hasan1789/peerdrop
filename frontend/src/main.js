@@ -38,9 +38,13 @@ const transferHistoryModal =  document.getElementById("transfer-history-modal");
 const closeTransferHistoryModal = document.getElementById("close-transfer-history");
 const sentTransferHistoryList = document.getElementById("sent-history-list");
 const permissionRequired = document.getElementById('permissionToggle');
+const connectionErrorModal = document.getElementById('connection-error-modal');
+const closeErrorBtn = document.getElementById('close-error');
+const connectionErrorMsg = document.getElementById('connection-error-msg');
 
 // Keep track of ongoing transfers
 const ongoingTransfers = new Map();
+const failedTransfers = new Set();
 
 
 async function loadSettings() {
@@ -216,6 +220,7 @@ sendFileButton.addEventListener("click", async (event) => {
         console.log("File sent:", filePath);
     } catch (err) {
         console.error("Error while sending file:", err);
+        showConnectionError("Connection lost! File transfer failed.");
     }
 });
 
@@ -350,7 +355,7 @@ function createTransferCard(id, fileName) {
         <div class="transfer-actions">
             <button class="action-btn pause">⏸</button>
             <button class="action-btn resume" style="display:none;">▶️</button>
-            <button class="action-btn cancel">❌</button>
+            <button class="action-btn cancel" style="display:none;">❌</button>
         </div>
     `;
 
@@ -432,6 +437,12 @@ EventsOn("transfer-complete", (payload) => {
     updateProgress(payload.id, 100);
 });
 
+
+EventsOn("transfer-failed", (payload) => {
+    console.log(payload);
+    failedTransfers.add(payload.id);
+});
+
 EventsOn("permission-request",  (senderInfo) => {
    console.log(senderInfo);
    showPermissionPopup(senderInfo)
@@ -474,4 +485,25 @@ transferHistoryBtn.addEventListener("click", () => {
 
 closeTransferHistoryModal.addEventListener("click", () => {
    transferHistoryModal.style.display = "none";
+});
+
+function showConnectionError(message) {
+    connectionErrorMsg.textContent = message;
+    connectionErrorModal.style.display = 'flex';
+}
+
+closeErrorBtn.addEventListener('click', () => {
+    connectionErrorModal.style.display = 'none';
+    
+    failedTransfers.forEach(id => {
+        const transfer = ongoingTransfers.get(id);
+        if (transfer) {
+            transfer.card.remove();
+            ongoingTransfers.delete(id);
+        }
+    });
+
+    failedTransfers.clear();
+
+    updateTransferCount();
 });

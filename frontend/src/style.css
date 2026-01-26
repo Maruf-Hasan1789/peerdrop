@@ -883,3 +883,16 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+.error-window {
+    background:white;
+    padding:20px;
+    border-radius:8px;
+    max-width:400px;
+    text-align:center;
+}
+.error-actions {
+    margin-top:15px;
+    display:flex;
+    justify-content:center;
+}
