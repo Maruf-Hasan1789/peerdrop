@@ -274,16 +274,31 @@ body, html {
 .file-label { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .status-label { font-size: 12px; color: #64748b; }
 
-.progress-container {
-    grid-column: 1 / span 2;
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 5px;
+.progress-bar {
+    height: 100%;
+    /* 1. Use a hardcoded hex color to ensure it renders immediately */
+    background-color: #3498db !important;
+
+    /* 2. Start with a tiny width so it's technically "visible" */
+    width: 0%;
+
+    /* 3. Reduce or remove transition for high-speed transfers */
+    /* A 0.3s ease is too slow for 100+ chunks per second */
+    transition: width 0.1s linear;
+
+    /* 4. Ensure it has a min-height to be visible in the container */
+    min-height: 6px;
 }
 
-.progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
+/* --- Ensure the container isn't collapsing --- */
+.progress-container {
+    height: 8px; /* Increased slightly for visibility */
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+    width: 100%; /* Force full width */
+}
 
 .transfer-actions {
     display: flex;
@@ -895,4 +910,14 @@ input:checked + .slider:before {
     margin-top:15px;
     display:flex;
     justify-content:center;
+}
+
+.transfer-grid {
+    display: flex !important;
+    gap: 16px;
+    width: 100%;
+}
+
+.ongoing-transfers {
+    flex: 1;
 }

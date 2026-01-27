@@ -18,15 +18,18 @@ import (
 )
 
 type chunkedFile struct {
-	totalChunks int
-	received    [][]byte
+	totalChunks   int
+	received      [][]byte
+	receivedCount int
 }
 
 var incomingFiles = make(map[string]*chunkedFile)
 
 type PeerSession struct {
-	conn transport.Connection
-	peer discovery.Peer
+	ctx    context.Context
+	cancel context.CancelFunc
+	conn   transport.Connection
+	peer   discovery.Peer
 
 	done chan struct{}
 
@@ -40,16 +43,20 @@ type PeerSession struct {
 	fileReceivedListeners []func(name string)
 
 	//message handlers map
-	handlers map[string]func(msg protocol.Message, downloadPath string)
+	handlers map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
 }
 
-func NewPeerSession(conn transport.Connection) *PeerSession {
+func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession {
+	ctx, cancel := context.WithCancel(ctx)
 	p := &PeerSession{
+		ctx:         ctx,
+		cancel:      cancel,
 		conn:        conn,
 		peer:        conn.PeerInfo(),
 		done:        make(chan struct{}),
 		connectedAt: time.Now(),
-		handlers:    make(map[string]func(msg protocol.Message, downloadPath string)),
+		handlers:    make(map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)),
+		lastSeen:    time.Now(),
 	}
 
 	p.handlers["file"] = p.handleFile
@@ -59,10 +66,11 @@ func NewPeerSession(conn transport.Connection) *PeerSession {
 }
 
 func (p *PeerSession) Start(downloadPath string) {
-	go p.readLoop(downloadPath)
+	go p.readLoop(p.ctx, downloadPath)
 }
 
 func (p *PeerSession) Stop() error {
+	p.cancel()
 	err := p.conn.Close()
 	<-p.done
 	return err
@@ -84,7 +92,7 @@ func (p *PeerSession) OnFileReceived(fn func(name string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
-func (p *PeerSession) readLoop(downloadPath string) {
+func (p *PeerSession) readLoop(ctx context.Context, downloadPath string) {
 	defer close(p.done)
 
 	for {
@@ -95,12 +103,11 @@ func (p *PeerSession) readLoop(downloadPath string) {
 			return
 		}
 
-		p.lastSeen = time.Now()
-		p.handleMessage(data, downloadPath)
+		p.handleMessage(ctx, data, downloadPath)
 	}
 }
 
-func (p *PeerSession) handleMessage(data []byte, downloadPath string) {
+func (p *PeerSession) handleMessage(ctx context.Context, data []byte, downloadPath string) {
 	var msg protocol.Message
 
 	if err := json.Unmarshal(data, &msg); err != nil {
@@ -113,7 +120,7 @@ func (p *PeerSession) handleMessage(data []byte, downloadPath string) {
 	handler, ok := p.handlers[msg.Type]
 
 	if ok {
-		handler(msg, downloadPath)
+		handler(ctx, msg, downloadPath)
 	} else {
 		if p.onError != nil {
 			p.onError(fmt.Errorf("unknown message type: %s", msg.Type))
@@ -121,11 +128,11 @@ func (p *PeerSession) handleMessage(data []byte, downloadPath string) {
 	}
 }
 
-func (p *PeerSession) handleText(msg protocol.Message, downloadPath string) {
+func (p *PeerSession) handleText(ctx context.Context, msg protocol.Message, downloadPath string) {
 	log.Printf("Peer says: %v", string(msg.Data))
 }
 
-func (p *PeerSession) handleFile(msg protocol.Message, downloadPath string) {
+func (p *PeerSession) handleFile(ctx context.Context, msg protocol.Message, downloadPath string) {
 
 	fileName := filepath.Base(msg.Name)
 
@@ -247,28 +254,49 @@ func emitTransferFailedEvent(ctx context.Context, fileId string, path string) {
 	})
 }
 
-func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
+func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, downloadPath string) {
 	f, ok := incomingFiles[msg.Name]
+
+	fileId := fmt.Sprintf("%v-%v", msg.Name, time.Now().Unix())
 
 	if !ok {
 		f = &chunkedFile{
-			totalChunks: msg.TotalChunks,
-			received:    make([][]byte, msg.TotalChunks),
+			totalChunks:   msg.TotalChunks,
+			received:      make([][]byte, msg.TotalChunks),
+			receivedCount: 0,
 		}
 		incomingFiles[msg.Name] = f
+
+		runtime.EventsEmit(ctx, "receiving-started", map[string]string{
+			"id":            fileId,
+			"file":          msg.Name,
+			"totalChunks":   strconv.Itoa(msg.TotalChunks),
+			"totalReceived": "0",
+		})
+		p.lastSeen = time.Now()
 	}
 
-	f.received[msg.ChunkIndex] = msg.Data
+	if f.received[msg.ChunkIndex] == nil {
+		f.received[msg.ChunkIndex] = msg.Data
+		f.receivedCount++
+
+		if time.Since(p.lastSeen) >= time.Second {
+			runtime.EventsEmit(ctx, "receiving-progress", map[string]string{
+				"id":            fileId,
+				"file":          msg.Name,
+				"totalChunks":   strconv.Itoa(msg.TotalChunks),
+				"totalReceived": strconv.Itoa(f.receivedCount),
+			})
+			p.lastSeen = time.Now()
+		}
+	}
 
 	//check if all chunks received
 
-	complete := true
+	complete := false
 
-	for _, chunk := range f.received {
-		if chunk == nil {
-			complete = false
-			break
-		}
+	if f.receivedCount == msg.TotalChunks {
+		complete = true
 	}
 
 	if complete {
@@ -288,6 +316,13 @@ func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 		}
 
 		log.Printf("Large file received %v\n", fileName)
+
+		time.Sleep(1 * time.Second)
+
+		runtime.EventsEmit(ctx, "file-received", map[string]string{
+			"id":   fileId,
+			"file": fileName,
+		})
 
 		delete(incomingFiles, msg.Name)
 	}

@@ -41,7 +41,10 @@ const permissionRequired = document.getElementById('permissionToggle');
 const connectionErrorModal = document.getElementById('connection-error-modal');
 const closeErrorBtn = document.getElementById('close-error');
 const connectionErrorMsg = document.getElementById('connection-error-msg');
+const receiveListEl = document.getElementById("receive-list");
+const receiveCountEl = document.getElementById("receive-count");
 
+const receivingTransfers = new Map();
 // Keep track of ongoing transfers
 const ongoingTransfers = new Map();
 const failedTransfers = new Set();
@@ -183,9 +186,7 @@ EventsOn("peer-disconnected", (peer) => {
     console.log(`[DISCONNECTED] ${peer.user_name} (${peer.id})`);
 });
 
-EventsOn("file-received", (data) => {
-    console.log(`[FILE] ${data.peer} -> ${data.name}`);
-});
+
 
 EventsOn("randomEvent", (data) => {
    console.log("random event from frontend " + data)
@@ -426,6 +427,8 @@ EventsOn("transfer-start", (payload) => {
     createTransferCard(payload.id, payload.fileName);
 });
 
+
+
 EventsOn("transfer-progress", (payload) => {
     console.log(payload);
     let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
@@ -447,6 +450,7 @@ EventsOn("permission-request",  (senderInfo) => {
    console.log(senderInfo);
    showPermissionPopup(senderInfo)
 });
+
 
 
 function showPermissionPopup(sender) {
@@ -507,3 +511,143 @@ closeErrorBtn.addEventListener('click', () => {
 
     updateTransferCount();
 });
+
+
+
+// --- State ---
+const receiveTimeouts = new Map();
+
+
+// --- Events from backend ---
+EventsOn("receiving-started", (payload) => {
+    // payload: { id, file, totalChunks, totalReceived }
+    // We use payload.file (fileName) as the unique key because ID is unstable
+    createReceiveCard(payload.file, payload.file);
+});
+
+EventsOn("receiving-progress", (payload) => {
+    // payload: { id, file, totalChunks, totalReceived }
+    const fileKey = payload.file;
+    const received = Number(payload.totalReceived) || 0;
+    const total = Number(payload.totalChunks) || 1;
+
+    const progress = (received / total) * 100;
+    updateReceiveProgress(fileKey, progress);
+});
+
+EventsOn("file-received", (payload) => {
+    // payload: { id, file }
+    const fileKey = payload.file;
+    if (receivingTransfers.has(fileKey)) {
+        updateReceiveProgress(fileKey, 100);
+    }
+});
+
+// --- UI creators ---
+function createReceiveCard(key, fileName) {
+    if (receivingTransfers.has(key)) return;
+
+    // 1. Set placeholder state
+    receivingTransfers.set(key, { loading: true, lastProgress: 0 });
+
+    // 2. Build the DOM element
+    const card = document.createElement("div");
+    card.classList.add("transfer-card");
+    // We can still store the key in dataset if needed
+    card.dataset.key = key;
+
+    card.innerHTML = `
+        <div class="transfer-info">
+            <span class="file-label">${fileName}</span>
+            <span class="status-label">Receiving… 0%</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%"></div>
+        </div>
+    `;
+
+    // 3. Append to the correct list
+    if (receiveListEl) {
+        receiveListEl.appendChild(card);
+    }
+
+    // 4. Cache the references for performance
+    const transferData = {
+        loading: false,
+        el: card,
+        bar: card.querySelector(".progress-bar"),
+        label: card.querySelector(".status-label"),
+        lastProgress: 0
+    };
+
+    // 5. Check if a progress event arrived while we were building the card
+    const pending = receivingTransfers.get(key);
+    const initialProgress = (pending && pending.loading) ? pending.lastProgress : 0;
+
+    receivingTransfers.set(key, transferData);
+
+    // Apply any missed progress immediately
+    if (initialProgress > 0) {
+        updateReceiveProgress(key, initialProgress);
+    }
+
+    updateReceiveCount();
+}
+
+// --- Progress updates ---
+function updateReceiveProgress(key, progress) {
+    const data = receivingTransfers.get(key);
+    if (!data) return;
+
+    // If the card is still being created, save progress for later
+    if (data.loading) {
+        data.lastProgress = progress;
+        return;
+    }
+
+    const displayProgress = Math.min(Math.floor(progress), 100);
+
+    // Prevent redundant DOM updates
+    if (displayProgress === data.lastProgress && displayProgress < 100) return;
+    data.lastProgress = displayProgress;
+
+    // Use requestAnimationFrame for a smooth visual update
+    requestAnimationFrame(() => {
+        if (data.bar) {
+            data.bar.style.width = `${displayProgress}%`;
+        }
+
+        if (data.label) {
+            if (displayProgress >= 100) {
+                data.label.textContent = "Received";
+                scheduleCardRemoval(key);
+            } else {
+                data.label.textContent = `Receiving… ${displayProgress}%`;
+            }
+        }
+    });
+}
+
+// --- Cleanup ---
+function scheduleCardRemoval(key) {
+    if (receiveTimeouts.has(key)) return;
+
+    const timeout = setTimeout(() => {
+        const data = receivingTransfers.get(key);
+        if (data && data.el) {
+            data.el.remove();
+        }
+        receivingTransfers.delete(key);
+        receiveTimeouts.delete(key);
+        updateReceiveCount();
+    }, 1500);
+
+    receiveTimeouts.set(key, timeout);
+}
+
+// --- Count badge ---
+function updateReceiveCount() {
+    if (receiveCountEl) {
+        receiveCountEl.textContent = receivingTransfers.size.toString();
+    }
+}

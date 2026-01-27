@@ -131,7 +131,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
 		}
 
-		selectedPeerSession = session.NewPeerSession(conn)
+		selectedPeerSession = session.NewPeerSession(a.ctx, conn)
 		selectedPeerSession.Start(a.settings.DownloadPath)
 		a.RegisterSession(selectedPeerSession)
 	}
