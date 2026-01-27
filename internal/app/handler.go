@@ -10,7 +10,7 @@ import (
 
 func (a *App) HandleConnection(conn transport.Connection) {
 	defer conn.Close()
-	peerSession := session.NewPeerSession(conn)
+	peerSession := session.NewPeerSession(a.ctx, conn)
 
 	peerSession.OnFileReceived(func(name string) {
 		log.Printf("File received %v\n", name)
