@@ -6,36 +6,38 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/labstack/gommon/log"
 )
 
 type transferHistoryList struct {
-	SentFileHistories []transferHistory
-	historyLock       sync.Mutex
+	transferFileHistories []transferHistory
+	historyLock           sync.Mutex
 }
 
 type transferHistory struct {
-	Receiver  string `json:"receiver"`
-	FileName  string `json:"fileName"`
-	Status    string `json:"status"`
-	TimeStamp int64  `json:"timeStamp"`
+	Peer         string `json:"peer"`
+	FileName     string `json:"file_name"`
+	TransferType string `json:"transfer_type"` //SENT or RECEIVED
+	Status       string `json:"status"`        //COMPLETED or FAILED
+	TimeStamp    int64  `json:"time_stamp"`
 }
 
 var transferHistories transferHistoryList
 
-func loadOrCreateSentTransferHistory() ([]transferHistory, error) {
-	log.Info("Loading sent transfer history")
-	sentHistoryFile, err := getHistoryFilePath()
+func loadOrCreateTransferHistory() ([]transferHistory, error) {
+	log.Info("Loading transfer history")
+	historyFile, err := getHistoryFilePath()
 
 	if err != nil {
 		log.Printf("Error loading sent transfer history: %v", err)
 		return nil, err
 	}
 
-	if _, err := os.Stat(sentHistoryFile); os.IsNotExist(err) {
+	if _, err := os.Stat(historyFile); os.IsNotExist(err) {
 		log.Printf("Sent transfer history not found")
-		err := os.WriteFile(sentHistoryFile, []byte("[]"), 0644)
+		err := os.WriteFile(historyFile, []byte("[]"), 0644)
 
 		if err != nil {
 			log.Printf("Error creating sent transfer history: %v", err)
@@ -43,30 +45,30 @@ func loadOrCreateSentTransferHistory() ([]transferHistory, error) {
 		}
 	}
 
-	sentFilesHistory, err := readSentFileHistory(sentHistoryFile)
+	filesHistory, err := readFileHistory(historyFile)
 	if err != nil {
 		log.Printf("Error loading sent transfer history: %v", err)
 		return nil, err
 	}
 
-	return sentFilesHistory, nil
+	return filesHistory, nil
 }
 
-func readSentFileHistory(historyFilePath string) ([]transferHistory, error) {
+func readFileHistory(historyFilePath string) ([]transferHistory, error) {
 	data, err := os.ReadFile(historyFilePath)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var sentHistory []transferHistory
-	err = json.Unmarshal(data, &sentHistory)
+	var histories []transferHistory
+	err = json.Unmarshal(data, &histories)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return sentHistory, nil
+	return histories, nil
 }
 
 func getHistoryFilePath() (string, error) {
@@ -84,13 +86,13 @@ func getHistoryFilePath() (string, error) {
 		return "", fmt.Errorf("error creating transfer history directory: %v", err)
 	}
 
-	historyFile := filepath.Join(transferConfigDir, "sent_transfer_history.json")
+	historyFile := filepath.Join(transferConfigDir, "transfer_history.json")
 
 	return historyFile, nil
 }
 
-func addNewSentFileHistory(receiver string, fileName string, status string) error {
-	sentFileHistories, err := loadOrCreateSentTransferHistory()
+func addNewTransferFileHistory(peer string, fileName string, transferType string, status string) error {
+	fileHistories, err := loadOrCreateTransferHistory()
 
 	if err != nil {
 		return err
@@ -100,21 +102,23 @@ func addNewSentFileHistory(receiver string, fileName string, status string) erro
 	defer transferHistories.historyLock.Unlock()
 
 	entry := transferHistory{
-		Receiver: receiver,
-		FileName: fileName,
-		Status:   status,
+		Peer:         peer,
+		FileName:     fileName,
+		TransferType: transferType,
+		Status:       status,
+		TimeStamp:    time.Now().UnixMilli(),
 	}
 
-	transferHistories.SentFileHistories = append(transferHistories.SentFileHistories, sentFileHistories...)
-	transferHistories.SentFileHistories = append(transferHistories.SentFileHistories, entry)
+	transferHistories.transferFileHistories = append(transferHistories.transferFileHistories, fileHistories...)
+	transferHistories.transferFileHistories = append(transferHistories.transferFileHistories, entry)
 
 	const maxEntries = 500
 
-	if len(transferHistories.SentFileHistories) > maxEntries {
-		transferHistories.SentFileHistories = transferHistories.SentFileHistories[:maxEntries]
+	if len(transferHistories.transferFileHistories) > maxEntries {
+		transferHistories.transferFileHistories = transferHistories.transferFileHistories[:maxEntries]
 	}
 
-	err = saveSentFileHistoriesInDisk(transferHistories.SentFileHistories)
+	err = saveTransferFileHistoriesInDisk(transferHistories.transferFileHistories)
 
 	if err != nil {
 		return err
@@ -123,7 +127,7 @@ func addNewSentFileHistory(receiver string, fileName string, status string) erro
 	return err
 }
 
-func saveSentFileHistoriesInDisk(sentFilesList []transferHistory) error {
+func saveTransferFileHistoriesInDisk(sentFilesList []transferHistory) error {
 
 	data, err := json.MarshalIndent(sentFilesList, "", "  ")
 
@@ -143,4 +147,25 @@ func saveSentFileHistoriesInDisk(sentFilesList []transferHistory) error {
 	}
 
 	return os.Rename(temporaryFile, tmpFile)
+}
+
+func clearTransferHistories() error {
+	historyFilePath, err := getHistoryFilePath()
+	if err != nil {
+		log.Printf("Error loading sent transfer history: %v", err)
+	}
+
+	file, err := os.OpenFile(historyFilePath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to clear history: %v", err)
+	}
+
+	defer file.Close()
+
+	_, err = file.Write([]byte("[]"))
+	if err != nil {
+		return fmt.Errorf("failed to write empty array: %v", err)
+	}
+
+	return nil
 }

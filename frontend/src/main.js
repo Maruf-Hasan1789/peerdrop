@@ -9,7 +9,8 @@ import {
     SaveSettings,
     PickDownloadFolder,
     GetTransferHistories,
-    HandshakePermission
+    HandshakePermission,
+    ClearTransferHistory
 } from '../wailsjs/go/app/App';
 import {EventsOn} from "../wailsjs/runtime";
 
@@ -36,13 +37,16 @@ const transferCountEl = document.getElementById("transfer-count");
 const transferHistoryBtn = document.getElementById("history-toggle");
 const transferHistoryModal =  document.getElementById("transfer-history-modal");
 const closeTransferHistoryModal = document.getElementById("close-transfer-history");
-const sentTransferHistoryList = document.getElementById("sent-history-list");
+const TransferHistoryList = document.getElementById("transfer-history-list");
 const permissionRequired = document.getElementById('permissionToggle');
 const connectionErrorModal = document.getElementById('connection-error-modal');
 const closeErrorBtn = document.getElementById('close-error');
 const connectionErrorMsg = document.getElementById('connection-error-msg');
 const receiveListEl = document.getElementById("receive-list");
 const receiveCountEl = document.getElementById("receive-count");
+const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+
 
 const receivingTransfers = new Map();
 // Keep track of ongoing transfers
@@ -124,33 +128,32 @@ function updatePeerListUI() {
 
 async function loadTransferHistory() {
     console.log("Loading Transfer History")
-    sentTransferHistoryList.innerHTML = "";
+    TransferHistoryList.innerHTML = "";
 
-    const sentFileHistories = await GetTransferHistories();
-    //console.log("Sent File Histories", sentFileHistories);
-    sentFileHistories.forEach(sentFile => {
+    const transferHistories = await GetTransferHistories();
+    console.log("Sent File Histories", transferHistories);
+    transferHistories.forEach(transferredFile => {
         const li = document.createElement("li");
         li.classList.add("history-item");
 
         li.innerHTML = `
             <div class="history-main">
-                <span class="history-filename">${sentFile.fileName}</span>
-                <span class="history-status ${sentFile.status.toLowerCase()}">
-                    ${sentFile.status}
-                </span>
+                <span class="history-filename">${transferredFile.file_name}</span>
+                <span class="history-status">${transferredFile.status}</span>
+                <span class="history-transfer-type">${transferredFile.transfer_type}</span>
             </div>
         
             <div class="history-meta">
                 <span class="history-receiver">
-                    to: ${sentFile.receiver}
+                    to: ${transferredFile.peer}
                 </span>
                 <span class="history-time">
-                    ${formatTimestamp(sentFile.timeStamp)}
+                    ${formatTimestamp(transferredFile.time_stamp)}
                 </span>
             </div>
         `;
 
-        sentTransferHistoryList.append(li);
+        TransferHistoryList.append(li);
     });
 }
 
@@ -161,7 +164,8 @@ function formatTimestamp(unixMilliSeconds) {
         month: "short",
         day: "2-digit",
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
+        hour12 : false,
     });
 }
 
@@ -651,3 +655,12 @@ function updateReceiveCount() {
         receiveCountEl.textContent = receivingTransfers.size.toString();
     }
 }
+
+clearHistoryBtn.addEventListener("click", async () => {
+    try {
+        TransferHistoryList.innerHTML = "";
+        await ClearTransferHistory();
+    }catch (e) {
+        console.log("Error while clearing transfer histories")
+    }
+});

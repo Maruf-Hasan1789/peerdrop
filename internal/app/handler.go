@@ -12,8 +12,13 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	defer conn.Close()
 	peerSession := session.NewPeerSession(a.ctx, conn)
 
-	peerSession.OnFileReceived(func(name string) {
-		log.Printf("File received %v\n", name)
+	peerSession.OnFileReceived(func(fileName string) {
+		log.Printf("File received in HandleConnection %v\n", fileName)
+		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, fileName, "RECEIVED", "COMPLETED")
+
+		if err != nil {
+			log.Printf("Error adding file history: %v\n", err)
+		}
 	})
 
 	peerSession.OnDisconnected(func(peer discovery.Peer) {
