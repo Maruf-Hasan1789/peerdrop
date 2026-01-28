@@ -29,10 +29,11 @@ export namespace app {
 	    }
 	}
 	export class transferHistory {
-	    receiver: string;
-	    fileName: string;
+	    peer: string;
+	    file_name: string;
+	    transfer_type: string;
 	    status: string;
-	    timeStamp: number;
+	    time_stamp: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new transferHistory(source);
@@ -40,10 +41,11 @@ export namespace app {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.receiver = source["receiver"];
-	        this.fileName = source["fileName"];
+	        this.peer = source["peer"];
+	        this.file_name = source["file_name"];
+	        this.transfer_type = source["transfer_type"];
 	        this.status = source["status"];
-	        this.timeStamp = source["timeStamp"];
+	        this.time_stamp = source["time_stamp"];
 	    }
 	}
 

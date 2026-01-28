@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
@@ -32,7 +33,7 @@ func (a *App) Startup(ctx context.Context, settings *Settings, permissionManager
 	a.ctx = ctx
 	a.settings = settings
 	a.permissionManager = permissionManager
-	_, err := loadOrCreateSentTransferHistory()
+	_, err := loadOrCreateTransferHistory()
 
 	if err != nil {
 		log.Printf("Error loading sent transfer history: %v", err)
@@ -57,6 +58,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	*/
 
 	p.OnFileReceived(func(name string) {
+		log.Printf("File received: in Bind Session %s", name)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
 				"name": name,
@@ -110,8 +112,8 @@ func (a *App) OnPeerRemoved(peer discovery.Peer) {
 	}
 }
 
-func (a *App) SendFileToPeer(peerId string, filePath string) error {
-	log.Printf("Enter App SendFileToPeer %v FilePath %v\n", peerId, filePath)
+func (a *App) SendFileToPeer(peerId string, fileName string) error {
+	log.Printf("Enter App SendFileToPeer %v FilePath %v\n", peerId, fileName)
 
 	selectedPeerSession, ok := peerSessions[peerId]
 	if !ok {
@@ -125,7 +127,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		log.Printf("Peer %v is selected by peer %v\n", peerId, peerInfo.Name)
 
 		dialer := &transport.Dialer{}
-		conn, err := dialer.Dial(*peerInfo, a.ctx, filePath)
+		conn, err := dialer.Dial(*peerInfo, a.ctx, fileName)
 
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
@@ -136,7 +138,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		a.RegisterSession(selectedPeerSession)
 	}
 
-	err := selectedPeerSession.SendLargeFile(a.ctx, filePath, 1024*1024)
+	err := selectedPeerSession.SendLargeFile(a.ctx, fileName, 1024*1024)
 	if err != nil {
 		_ = selectedPeerSession.Stop()
 		delete(peerSessions, peerId)
@@ -146,7 +148,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 
 	log.Printf("Sending file to peer %v\n", peerId)
 
-	err = addNewSentFileHistory(selectedPeerSession.GetPeerInfo().Name, filePath, "COMPLETED")
+	err = addNewTransferFileHistory(selectedPeerSession.GetPeerInfo().UserName, filepath.Base(fileName), "SENT", "COMPLETED")
 
 	if err != nil {
 		log.Printf("Error adding file to peer %v\n", peerId)
@@ -229,7 +231,7 @@ func (a *App) PickDownloadFolder() (string, error) {
 }
 
 func (a *App) GetTransferHistories() []transferHistory {
-	sentHistories, err := loadOrCreateSentTransferHistory()
+	sentHistories, err := loadOrCreateTransferHistory()
 	if err != nil {
 		log.Printf("Error loading sent transfer history: %v\n", err)
 		return nil
@@ -240,4 +242,12 @@ func (a *App) GetTransferHistories() []transferHistory {
 
 func (a *App) HandshakePermission(peerId string, allowed bool) {
 	a.permissionManager.Resolve(peerId, allowed)
+}
+
+func (a *App) ClearTransferHistory() {
+	err := clearTransferHistories()
+
+	if err != nil {
+		log.Printf("Error clearing transfer history: %v\n", err)
+	}
 }

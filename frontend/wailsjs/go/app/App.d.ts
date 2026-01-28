@@ -6,6 +6,8 @@ import {discovery} from '../models';
 import {session} from '../models';
 import {context} from '../models';
 
+export function ClearTransferHistory():Promise<void>;
+
 export function GetSettings():Promise<app.Settings>;
 
 export function GetTransferHistories():Promise<Array<app.transferHistory>>;
