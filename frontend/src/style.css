@@ -1,6 +1,6 @@
 /* --- Core Layout & Reset --- */
 :root {
-    --bg-main: #ffffff;
+    --bg-main: rgba(0, 0, 0, 0.1);
     --bg-sidebar: #f5f7f9;
     --accent: #3498db;
     --accent-hover: #2980b9;
@@ -13,8 +13,11 @@ body, html {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-    color: var(--text-dark);
+    font-family: 'Montserrat','Segoe UI', Roboto, Arial, sans-serif;
+    color: var(--text-dark); /* semi-transparent for glassy look */
+    backdrop-filter: blur(10px);           /* blur behind content */
+    -webkit-backdrop-filter: blur(10px);
+    background-color: var(--bg-main);
 }
 
 /* --- Header --- */
@@ -25,7 +28,7 @@ body, html {
     justify-content: space-between;
     align-items: center;
     padding: 0 0;
-    background-color: #f0f2f5;
+    background-color: grey;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     position: relative;
     z-index: 10;
@@ -74,9 +77,13 @@ body, html {
     flex-direction: column;
     height: 100vh;
     width: 100%;
-    background: var(--bg-main);
-}
+    /* 1. Use your variable or a hex code for a solid color */
+    background-color: var(--bg-main);
 
+    /* 2. Move the blur here if you want the glass effect */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
 /* Columns wrapper (below header) */
 .columns-wrapper {
     display: flex;
