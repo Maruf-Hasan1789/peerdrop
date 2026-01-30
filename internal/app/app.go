@@ -127,7 +127,7 @@ func (a *App) SendFileToPeer(peerId string, fileName string) error {
 		log.Printf("Peer %v is selected by peer %v\n", peerId, peerInfo.Name)
 
 		dialer := &transport.Dialer{}
-		conn, err := dialer.Dial(*peerInfo, a.ctx, filepath.Base(fileName))
+		conn, err := dialer.Dial(*peerInfo, a.ctx, fileName)
 
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
