@@ -16,7 +16,7 @@ import { EventsOn } from "../wailsjs/runtime";
 
 
 const peerListEl = document.getElementById("peer-list");
-const refreshBtn = document.getElementById("refresh-btn");
+const refreshBtn = document.getElementById("refresh-connected-peer-btn");
 const sendFileButton = document.getElementById("send-btn");
 const pickFile = document.getElementById("pick-file");
 const fileName = document.getElementById("file-name");
