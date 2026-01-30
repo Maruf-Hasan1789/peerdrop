@@ -2,17 +2,17 @@ console.log("🔥 frontend main.js loaded");
 import './style.css'
 
 import {
-    ListPeers,
-    SendFileToPeer,
-    PickFile,
+    ClearTransferHistory,
     GetSettings,
-    SaveSettings,
-    PickDownloadFolder,
     GetTransferHistories,
     HandshakePermission,
-    ClearTransferHistory
+    ListPeers,
+    PickDownloadFolder,
+    PickFile,
+    SaveSettings,
+    SendFileToPeer
 } from '../wailsjs/go/app/App';
-import { EventsOn } from "../wailsjs/runtime";
+import {EventsOn} from "../wailsjs/runtime";
 
 
 const peerListEl = document.getElementById("peer-list");
@@ -33,7 +33,7 @@ const folderPicker = document.getElementById("folderPicker");
 const cancelSettingsBtn = document.getElementById("settingsCancelButton");
 let originalSettings = {};
 const transferListEl = document.getElementById("transfer-list");
-const transferCountEl = document.getElementById("transfer-count");
+const sendFileCountEl = document.getElementById("send-file-count");
 const transferHistoryBtn = document.getElementById("history-toggle");
 const transferHistoryModal = document.getElementById("transfer-history-modal");
 const closeTransferHistoryModal = document.getElementById("close-transfer-history");
@@ -48,7 +48,7 @@ const clearHistoryBtn = document.getElementById("clear-history-btn");
 const fileInfoBar = document.getElementById("file-info-bar");
 const dropZone = document.getElementById("drop-zone");
 const clearFileBtn = document.getElementById("clear-file");
-
+const activePeerCount = document.getElementById("active-peer-count");
 
 
 const receivingTransfers = new Map();
@@ -61,7 +61,7 @@ async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
         //console.log('Loaded settings:', settings);
-        originalSettings = { ...settings }
+        originalSettings = {...settings}
 
         // Populate inputs
         userName.value = settings.user_name || '';
@@ -127,6 +127,8 @@ function updatePeerListUI() {
 
         peerListEl.appendChild(li);
     });
+
+    activePeerCount.textContent = peersMap.size.toString();
 }
 
 async function loadTransferHistory() {
@@ -177,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-
 window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', (e) => e.preventDefault());
 EventsOn("peer-connected", (peer) => {
@@ -192,7 +193,6 @@ EventsOn("peer-disconnected", (peer) => {
     fetchPeers().then(r => console.log("fetching peers after disconnection"))
     console.log(`[DISCONNECTED] ${peer.user_name} (${peer.id})`);
 });
-
 
 
 EventsOn("randomEvent", (data) => {
@@ -212,20 +212,25 @@ EventsOn("wails:file-drop", (x, y, paths) => {
 
 sendFileButton.addEventListener("click", async (event) => {
     event.preventDefault();
-    console.log("Send Button is selected");
     try {
         // Open native file dialog via Go
         console.log("filePath", filePath);
-        if (filePath === "") {
-            console.error("File Path is not provided")
+        if (filePath === "" || receiverSelect.value === "") {
+            alert("Receiver is not provided");
+            //console.error("File Path is not provided")
             return
         }
 
         console.log("receiver ", receiverSelect.value, "filePath");
         // Send file to selected peer
-        await SendFileToPeer(receiverSelect.value, filePath);
+        const receiverId = receiverSelect.value;
+        SendFileToPeer(receiverId, filePath).then(() => {
+            console.log("File sent successfully");
+        }).catch(err => {
+            console.error("Error while sending the file");
+        });
         resetFileSelection();
-        console.log("File sent:", filePath);
+        //console.log("File sent:", filePath);
     } catch (err) {
         console.error("Error while sending file:", err);
         showConnectionError("Connection lost! File transfer failed.");
@@ -265,7 +270,6 @@ function resetFileSelection() {
     filePath = "";
     fileName.textContent = "No file selected";
     sendFileButton.disabled = true;
-    if (receiverSelect) receiverSelect.value = ""; // Optional: keep receiver?
 
     // Toggle UI back
     if (dropZone) dropZone.style.display = 'flex';
@@ -328,7 +332,6 @@ closeSettingsButton.addEventListener("click", () => {
 });
 
 
-
 saveSettingsBtn.addEventListener("click", async () => {
     const updatedSettings = {
         user_name: userName.value,
@@ -341,14 +344,13 @@ saveSettingsBtn.addEventListener("click", async () => {
     try {
         console.log(updatedSettings)
         await SaveSettings(updatedSettings)
-        originalSettings = { ...updatedSettings }
+        originalSettings = {...updatedSettings}
         alert("Settings saved successfully")
         loadSettings().then(r => console.log("Settings loaded"))
     } catch (err) {
         console.error("Failed to save settings")
     }
 });
-
 
 
 folderPicker.addEventListener("click", async () => {
@@ -389,6 +391,8 @@ function createTransferCard(id, fileName) {
         </div>
     `;
 
+    let started = true;
+    ongoingTransfers.set(id, {card, started});
     // Add card to DOM
     transferListEl.appendChild(card);
     updateTransferCount();
@@ -422,7 +426,7 @@ function createTransferCard(id, fileName) {
     });
 
     // Save reference
-    ongoingTransfers.set(id, { card, paused });
+    ongoingTransfers.set(id, {card, paused});
 }
 
 // --- Function to update progress ---
@@ -447,7 +451,8 @@ function updateProgress(id, progress) {
 
 // --- Update transfer count ---
 function updateTransferCount() {
-    transferCountEl.textContent = ongoingTransfers.size.toString();
+    console.log("Update Transfer Count", ongoingTransfers.size)
+    sendFileCountEl.textContent = ongoingTransfers.size.toString();
 }
 
 // --- Event Listeners from backend ---
@@ -457,9 +462,8 @@ EventsOn("transfer-start", (payload) => {
 });
 
 
-
 EventsOn("transfer-progress", (payload) => {
-    console.log(payload);
+    //console.log(payload);
     let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
     updateProgress(payload.id, progress);
 });
@@ -479,7 +483,6 @@ EventsOn("permission-request", (senderInfo) => {
     console.log(senderInfo);
     showPermissionPopup(senderInfo)
 });
-
 
 
 function showPermissionPopup(sender) {
@@ -508,7 +511,6 @@ function showPermissionPopup(sender) {
         modal.style.display = "none";
     };
 }
-
 
 
 transferHistoryBtn.addEventListener("click", () => {
@@ -540,7 +542,6 @@ closeErrorBtn.addEventListener('click', () => {
 
     updateTransferCount();
 });
-
 
 
 // --- State ---
@@ -577,7 +578,7 @@ function createReceiveCard(key, fileName) {
     if (receivingTransfers.has(key)) return;
 
     // 1. Set placeholder state
-    receivingTransfers.set(key, { loading: true, lastProgress: 0 });
+    receivingTransfers.set(key, {loading: true, lastProgress: 0});
 
     // 2. Build the DOM element
     const card = document.createElement("div");
