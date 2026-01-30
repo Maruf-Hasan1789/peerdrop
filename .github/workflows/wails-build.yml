@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - develop
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,8 +20,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # ---- Go ----
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -30,6 +35,7 @@ jobs:
         with:
           version: latest
 
+      # ---- Node ----
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -37,11 +43,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Frontend Deps
+      - name: Install Frontend Dependencies
         run: npm ci
         working-directory: frontend
 
-      - name: JS Lint
+      - name: Frontend Lint
         run: npm run lint
         working-directory: frontend
 
@@ -62,14 +68,17 @@ jobs:
             platform: windows
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # ---- Go ----
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.0'
           cache: true
 
+      # ---- Node ----
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -77,9 +86,18 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Frontend Deps
+      - name: Install Frontend Dependencies
         run: npm ci
         working-directory: frontend
+
+      # ✅ THIS FIXES YOUR ERROR
+      - name: Build Frontend
+        run: npm run build
+        working-directory: frontend
+
+      # 🔍 Optional debug (safe to remove later)
+      - name: Verify frontend dist
+        run: ls -R frontend/dist
 
       # ---- Linux deps ----
       - name: Install Linux Dependencies
@@ -91,16 +109,15 @@ jobs:
             libwebkit2gtk-4.0-dev \
             libayatana-appindicator3-dev
 
-      # ---- Wails CLI ----
+      # ---- Wails ----
       - name: Install Wails CLI
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      # ---- Version Check ----
-      - name: Verify Environment Versions
+      - name: Verify Environment
         run: |
-          echo "== Environment Versions =="
+          echo "== Versions =="
           go version
           node -v
           npm -v
@@ -110,7 +127,7 @@ jobs:
       - name: Build Application
         run: wails build -platform ${{ matrix.platform }}
 
-      # ---- Upload Artifacts ----
+      # ---- Artifacts ----
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
