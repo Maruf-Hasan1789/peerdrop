@@ -12,7 +12,7 @@ import {
     HandshakePermission,
     ClearTransferHistory
 } from '../wailsjs/go/app/App';
-import {EventsOn} from "../wailsjs/runtime";
+import { EventsOn } from "../wailsjs/runtime";
 
 
 const peerListEl = document.getElementById("peer-list");
@@ -21,7 +21,7 @@ const sendFileButton = document.getElementById("send-btn");
 const pickFile = document.getElementById("pick-file");
 const fileName = document.getElementById("file-name");
 const clearSelection = document.getElementById("clear-selection");
-let filePath =  "";
+let filePath = "";
 const receiverSelect = document.getElementById("receiver-select");
 const settingsModal = document.getElementById("settings-modal");
 const settingsButton = document.getElementById("settings-toggle");
@@ -35,7 +35,7 @@ let originalSettings = {};
 const transferListEl = document.getElementById("transfer-list");
 const transferCountEl = document.getElementById("transfer-count");
 const transferHistoryBtn = document.getElementById("history-toggle");
-const transferHistoryModal =  document.getElementById("transfer-history-modal");
+const transferHistoryModal = document.getElementById("transfer-history-modal");
 const closeTransferHistoryModal = document.getElementById("close-transfer-history");
 const TransferHistoryList = document.getElementById("transfer-history-list");
 const permissionRequired = document.getElementById('permissionToggle');
@@ -45,6 +45,9 @@ const connectionErrorMsg = document.getElementById('connection-error-msg');
 const receiveListEl = document.getElementById("receive-list");
 const receiveCountEl = document.getElementById("receive-count");
 const clearHistoryBtn = document.getElementById("clear-history-btn");
+const fileInfoBar = document.getElementById("file-info-bar");
+const dropZone = document.getElementById("drop-zone");
+const clearFileBtn = document.getElementById("clear-file");
 
 
 
@@ -58,7 +61,7 @@ async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
         //console.log('Loaded settings:', settings);
-        originalSettings = {...settings}
+        originalSettings = { ...settings }
 
         // Populate inputs
         userName.value = settings.user_name || '';
@@ -109,7 +112,7 @@ function updatePeerListUI() {
         li.classList.add("peer-item");
         li.dataset.peerId = peer.id;
 
-        console.log("Peer "+ peer.id, peer.name, peer.user_name)
+        console.log("Peer " + peer.id, peer.name, peer.user_name)
 
         li.innerHTML = `<strong>${peer.user_name}</strong><br>
                         <small>Port ${peer.port}</small>`
@@ -119,7 +122,7 @@ function updatePeerListUI() {
             document.querySelectorAll("#peer-list li").forEach(el => el.classList.remove("selected"));
             li.classList.add("selected");
 
-           renderSelectedPeer(peer)
+            renderSelectedPeer(peer)
         });
 
         peerListEl.appendChild(li);
@@ -165,7 +168,7 @@ function formatTimestamp(unixMilliSeconds) {
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-        hour12 : false,
+        hour12: false,
     });
 }
 
@@ -193,15 +196,15 @@ EventsOn("peer-disconnected", (peer) => {
 
 
 EventsOn("randomEvent", (data) => {
-   console.log("random event from frontend " + data)
+    console.log("random event from frontend " + data)
 });
 
 
-EventsOn("wails:file-drop", (x,y,paths) =>{
-    console.log("Dropped files at: ",x,y);
+EventsOn("wails:file-drop", (x, y, paths) => {
+    console.log("Dropped files at: ", x, y);
     console.log("File paths: ", paths)
 
-    if(paths && paths.length > 0) {
+    if (paths && paths.length > 0) {
         console.log("File received via Drag & Drop");
         handleFileSelection(paths[0]);
     }
@@ -213,7 +216,7 @@ sendFileButton.addEventListener("click", async (event) => {
     try {
         // Open native file dialog via Go
         console.log("filePath", filePath);
-        if(filePath === "") {
+        if (filePath === "") {
             console.error("File Path is not provided")
             return
         }
@@ -221,7 +224,7 @@ sendFileButton.addEventListener("click", async (event) => {
         console.log("receiver ", receiverSelect.value, "filePath");
         // Send file to selected peer
         await SendFileToPeer(receiverSelect.value, filePath);
-        sendFileButton.disabled = true;
+        resetFileSelection();
         console.log("File sent:", filePath);
     } catch (err) {
         console.error("Error while sending file:", err);
@@ -240,17 +243,39 @@ function getFileName(path) {
 }
 
 function handleFileSelection(path) {
-    if(!path || path === "") {
-        fileName.textContent = "No file selected";
-        sendFileButton.disabled = true;
-        fileName.textContent = "";
+    if (!path || path === "") {
+        resetFileSelection();
         return;
     }
 
     filePath = path;
-    fileName.textContent = getFileName(path)
+    fileName.textContent = getFileName(path);
+    // You might want to show file size if available, but for now just name
+
     sendFileButton.disabled = false;
-    console.log("File Ready to send", filePath)
+
+    // Toggle UI: Keep drop zone visible, show file info bar
+    if (dropZone) dropZone.style.display = 'flex';
+    if (fileInfoBar) fileInfoBar.style.display = 'flex';
+
+    console.log("File Ready to send", filePath);
+}
+
+function resetFileSelection() {
+    filePath = "";
+    fileName.textContent = "No file selected";
+    sendFileButton.disabled = true;
+    if (receiverSelect) receiverSelect.value = ""; // Optional: keep receiver?
+
+    // Toggle UI back
+    if (dropZone) dropZone.style.display = 'flex';
+    if (fileInfoBar) fileInfoBar.style.display = 'none';
+}
+
+if (clearFileBtn) {
+    clearFileBtn.addEventListener("click", () => {
+        resetFileSelection();
+    });
 }
 
 console.log("Hello");
@@ -263,9 +288,9 @@ function renderSelectedPeer(peer) {
     document.getElementById("selected-peer-name").textContent = peer.user_name
     document.getElementById("selected-peer-status").textContent = `Port ${peer.port} ${peer.id}`;
 
-   // if (peer.avatar) {
-       // document.getElementById("selected-peer-image").src = peer.avatar;
-  //  }
+    // if (peer.avatar) {
+    // document.getElementById("selected-peer-image").src = peer.avatar;
+    //  }
 
     const card = document.getElementById("selected-peer-card")
     card.classList.add("active");
@@ -275,12 +300,12 @@ function renderSelectedPeer(peer) {
 
 function hasSettingsChanged() {
     const currentSettings = {
-        user_name : userName.value,
+        user_name: userName.value,
         download_path: downloadPath.value,
-        is_permission_required_to_send_files : permissionRequired.checked
+        is_permission_required_to_send_files: permissionRequired.checked
     };
 
-    return Object.keys(currentSettings).some(key=> currentSettings[key] !== originalSettings[key]);
+    return Object.keys(currentSettings).some(key => currentSettings[key] !== originalSettings[key]);
 }
 
 clearSelection.addEventListener(("click"), () => {
@@ -306,9 +331,9 @@ closeSettingsButton.addEventListener("click", () => {
 
 saveSettingsBtn.addEventListener("click", async () => {
     const updatedSettings = {
-        user_name : userName.value,
-        download_path : downloadPath.value,
-        is_permission_required_to_send_files : permissionRequired.checked
+        user_name: userName.value,
+        download_path: downloadPath.value,
+        is_permission_required_to_send_files: permissionRequired.checked
     };
 
     console.log("Updated Settings", updatedSettings)
@@ -316,9 +341,9 @@ saveSettingsBtn.addEventListener("click", async () => {
     try {
         console.log(updatedSettings)
         await SaveSettings(updatedSettings)
-        originalSettings = {...updatedSettings}
+        originalSettings = { ...updatedSettings }
         alert("Settings saved successfully")
-        loadSettings().then(r=> console.log("Settings loaded"))
+        loadSettings().then(r => console.log("Settings loaded"))
     } catch (err) {
         console.error("Failed to save settings")
     }
@@ -329,13 +354,13 @@ saveSettingsBtn.addEventListener("click", async () => {
 folderPicker.addEventListener("click", async () => {
     try {
         downloadPath.value = await PickDownloadFolder();
-    }catch (e) {
+    } catch (e) {
         console.log("Error while setting download directory")
         alert("Error while setting download directory")
     }
 });
 
-cancelSettingsBtn.addEventListener("click",  () => {
+cancelSettingsBtn.addEventListener("click", () => {
     console.log("Original Settings", originalSettings)
     userName.value = originalSettings.user_name;
     downloadPath.value = originalSettings.download_path;
@@ -450,9 +475,9 @@ EventsOn("transfer-failed", (payload) => {
     failedTransfers.add(payload.id);
 });
 
-EventsOn("permission-request",  (senderInfo) => {
-   console.log(senderInfo);
-   showPermissionPopup(senderInfo)
+EventsOn("permission-request", (senderInfo) => {
+    console.log(senderInfo);
+    showPermissionPopup(senderInfo)
 });
 
 
@@ -492,7 +517,7 @@ transferHistoryBtn.addEventListener("click", () => {
 });
 
 closeTransferHistoryModal.addEventListener("click", () => {
-   transferHistoryModal.style.display = "none";
+    transferHistoryModal.style.display = "none";
 });
 
 function showConnectionError(message) {
@@ -502,7 +527,7 @@ function showConnectionError(message) {
 
 closeErrorBtn.addEventListener('click', () => {
     connectionErrorModal.style.display = 'none';
-    
+
     failedTransfers.forEach(id => {
         const transfer = ongoingTransfers.get(id);
         if (transfer) {
@@ -660,7 +685,7 @@ clearHistoryBtn.addEventListener("click", async () => {
     try {
         TransferHistoryList.innerHTML = "";
         await ClearTransferHistory();
-    }catch (e) {
+    } catch (e) {
         console.log("Error while clearing transfer histories")
     }
 });
