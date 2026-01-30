@@ -3,6 +3,7 @@ package discovery
 import (
 	"sync"
 
+	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
 	"github.com/labstack/gommon/log"
 )
 
@@ -12,12 +13,12 @@ type Discovery struct {
 	observers []PeerObserver
 }
 type SenderInfo struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	Addresses []string `json:"addresses"`
-	Port      string   `json:"port"`
-	UserName  string   `json:"user_name"`
-	Files     []string `json:"files"`
+	ID        string                `json:"id"`
+	Name      string                `json:"name"`
+	Addresses []string              `json:"addresses"`
+	Port      string                `json:"port"`
+	UserName  string                `json:"user_name"`
+	Files     []domain.FileMetadata `json:"files"`
 }
 
 func New() *Discovery {

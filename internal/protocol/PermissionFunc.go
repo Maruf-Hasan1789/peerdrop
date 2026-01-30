@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
 )
 
 type PermissionFunc func(
@@ -17,5 +18,5 @@ type HandshakeOptions struct {
 }
 
 type SendOptions struct {
-	FileNames []string
+	Files []domain.FileMetadata
 }

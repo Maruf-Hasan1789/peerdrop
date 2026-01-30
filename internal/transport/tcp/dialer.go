@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
@@ -31,7 +34,14 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, fileName st
 	}
 	handshakeOptions := protocol.HandshakeOptions{
 		SendOptions: protocol.SendOptions{
-			FileNames: []string{fileName},
+			Files: []domain.FileMetadata{
+				{
+					ID:       strconv.FormatInt(time.Now().UnixMilli(), 10),
+					FileName: fileName,
+					FileSize: int64(0),
+					Checksum: fileName,
+				},
+			},
 		},
 	}
 
