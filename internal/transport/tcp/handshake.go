@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
@@ -20,7 +21,7 @@ type Hello struct {
 	Port     int
 	Version  string
 	UserName string
-	Files    []string
+	Files    []domain.FileMetadata
 }
 
 type PermissionResponse struct {
@@ -155,7 +156,7 @@ func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer, options *
 		Port:     peer.Port,
 		Version:  peer.Version,
 		UserName: peer.UserName,
-		Files:    options.SendOptions.FileNames,
+		Files:    options.SendOptions.Files,
 	}
 
 	log.Printf("Marshalling Hello %v\n", hello)

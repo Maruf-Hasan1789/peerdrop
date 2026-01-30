@@ -208,7 +208,7 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 
 	runtime.EventsEmit(ctx, "transfer-start", map[string]string{
 		"id":       fileId,
-		"fileName": path,
+		"fileName": filepath.Base(path),
 	})
 
 	for i := 0; i < totalChunks; i++ {
