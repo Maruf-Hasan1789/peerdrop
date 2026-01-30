@@ -57,6 +57,11 @@ const ongoingTransfers = new Map();
 const failedTransfers = new Set();
 
 
+const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
 async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
@@ -495,7 +500,7 @@ function showPermissionPopup(sender) {
     fileList.innerHTML = "";
     sender.files.forEach(file => {
         const li = document.createElement("li");
-        li.textContent = file;
+        li.textContent = `File Name: ${file.file_name} Size: ${decimalNumberFormatter.format((file.file_size)/1024)} MB`;
         fileList.appendChild(li);
     });
 
