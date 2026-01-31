@@ -11,6 +11,7 @@ import (
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -77,8 +78,9 @@ func main() {
 	if err != nil {
 		log.Printf("Error while listening")
 	}
+	transferRegistry := transfer.NewRegistry()
 
-	wailsApp = app.NewApp(d)
+	wailsApp = app.NewApp(d, transferRegistry)
 	d.AddObserver(wailsApp)
 
 	permissionManager := app.NewPermissionManager(settings)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -19,13 +20,13 @@ type App struct {
 	discovery         *discovery.Discovery
 	settings          *Settings
 	permissionManager *PermissionManager
+	transferRegistry  *transfer.Registry
 }
 
-var sentHistories []transferHistory
-
-func NewApp(d *discovery.Discovery) *App {
+func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
 	return &App{
-		discovery: d,
+		discovery:        d,
+		transferRegistry: registry,
 	}
 }
 
@@ -47,16 +48,6 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
-
-	//peer := p.GetPeerInfo()
-
-	/*((if a.ctx != nil {
-		log.Printf("peer connected in bind session %v\n", peer)
-		runtime.EventsEmit(a.ctx, "peer-connected", discovery.ToPeerDTO(peer))
-	}
-
-	*/
-
 	p.OnFileReceived(func(name string) {
 		log.Printf("File received: in Bind Session %s", name)
 		if a.ctx != nil {
@@ -70,6 +61,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	p.OnDisconnected(func(peer discovery.Peer) {
 		log.Printf("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
+			a.transferRegistry.PauseAllByPeerId(peer.ID)
 			log.Printf("Emitting Events\n")
 			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{
 				"user_name": peer.UserName,
@@ -78,6 +70,11 @@ func (a *App) bindSession(p *session.PeerSession) {
 			})
 		}
 		a.discovery.RemovePeerById(peer.ID)
+	})
+
+	p.OnFileOffer(func(peerId string, fileId string, status transfer.Status, bytesDone int64) {
+		log.Printf("File offer: in Bind Session %s by %v\n", fileId, peerId)
+		a.transferRegistry.AddFileReceiving(peerId, fileId, status, bytesDone)
 	})
 }
 
