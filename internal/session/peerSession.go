@@ -14,6 +14,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -42,6 +43,7 @@ type PeerSession struct {
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
 	fileReceivedListeners []func(name string)
+	onFileOffer           func(peerId string, fileId string, status transfer.Status, chunksDone int64)
 
 	//message handlers map
 	handlers map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
@@ -91,6 +93,10 @@ func (p *PeerSession) OnError(fn func(err error)) {
 
 func (p *PeerSession) OnFileReceived(fn func(name string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
+}
+
+func (p *PeerSession) OnFileOffer(fn func(peerId string, fileId string, FileStatus transfer.Status, bytesDone int64)) {
+	p.onFileOffer = fn
 }
 
 func (p *PeerSession) readLoop(ctx context.Context, downloadPath string) {
@@ -285,8 +291,9 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 			return
 		}
 
-		incomingFiles[msg.Name] = f
+		p.onFileOffer(p.peer.ID, fileId, transfer.InProgress, 0)
 
+		incomingFiles[msg.Name] = f
 		runtime.EventsEmit(ctx, "receiving-started", map[string]string{
 			"id":            fileId,
 			"file":          msg.Name,
@@ -390,7 +397,7 @@ func (p *PeerSession) GetPeerInfo() discovery.Peer {
 }
 
 func (p *PeerSession) handleDisconnect(err error) {
-	log.Printf("Peer disconnected %v %v\n", p.peer.Name, err)
+	log.Printf("Peer disconnected during reading %v %v\n", p.peer.Name, err)
 
 	if p.onDisconnected != nil {
 		p.onDisconnected(p.peer)
