@@ -68,14 +68,16 @@ func (a *App) bindSession(p *session.PeerSession) {
 	})
 
 	p.OnDisconnected(func(peer discovery.Peer) {
-		log.Printf("peer disconnected %v\n", peer.Name)
+		log.Printf("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
-			runtime.EventsEmit(a.ctx, "disconnected", map[string]interface{}{
-				"name": peer.Name,
-				"id":   peer.ID,
-				"port": peer.Port,
+			log.Printf("Emitting Events\n")
+			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{
+				"user_name": peer.UserName,
+				"id":        peer.ID,
+				"port":      peer.Port,
 			})
 		}
+		a.discovery.RemovePeerById(peer.ID)
 	})
 }
 
