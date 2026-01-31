@@ -6,6 +6,10 @@ export function ClearTransferHistory() {
   return window['go']['app']['App']['ClearTransferHistory']();
 }
 
+export function DisconnectPeer(arg1) {
+  return window['go']['app']['App']['DisconnectPeer'](arg1);
+}
+
 export function GetSettings() {
   return window['go']['app']['App']['GetSettings']();
 }

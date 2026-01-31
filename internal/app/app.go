@@ -253,3 +253,13 @@ func (a *App) ClearTransferHistory() {
 		log.Printf("Error clearing transfer history: %v\n", err)
 	}
 }
+
+func (a *App) DisconnectPeer(peerId string) {
+	peerSession, ok := peerSessions[peerId]
+	if !ok {
+		log.Printf("Peer %v not found in peer sessions %v\n", peerId, peerSessions)
+		return
+	}
+	_ = peerSession.Stop()
+	delete(peerSessions, peerId)
+}

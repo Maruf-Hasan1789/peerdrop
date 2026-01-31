@@ -8,6 +8,8 @@ import {context} from '../models';
 
 export function ClearTransferHistory():Promise<void>;
 
+export function DisconnectPeer(arg1:string):Promise<void>;
+
 export function GetSettings():Promise<app.Settings>;
 
 export function GetTransferHistories():Promise<Array<app.transferHistory>>;
