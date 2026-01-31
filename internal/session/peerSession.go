@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,8 +19,8 @@ import (
 )
 
 type chunkedFile struct {
+	file          *os.File
 	totalChunks   int
-	received      [][]byte
 	receivedCount int
 }
 
@@ -218,6 +219,9 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 			emitTransferFailedEvent(ctx, fileId, path)
 			return err
 		}
+		hash := sha256.New()
+		hash.Write(buf[:n])
+		checkSum := hash.Sum(nil)
 
 		msg := protocol.Message{
 			Type:        "file-chunk",
@@ -225,6 +229,7 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 			Data:        buf[:n],
 			ChunkIndex:  i,
 			TotalChunks: totalChunks,
+			Checksum:    fmt.Sprintf("%x", checkSum),
 		}
 
 		if err := p.send(msg); err != nil {
@@ -260,11 +265,26 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 	fileId := fmt.Sprintf("%v-%v", msg.Name, time.Now().Unix())
 
 	if !ok {
+		file, err := os.OpenFile(filepath.Join(downloadPath, msg.Name), os.O_CREATE|os.O_RDWR, 0644)
+
+		if err != nil {
+			log.Printf("Error opening file %v: %v", msg.Name, err)
+			return
+		}
+
 		f = &chunkedFile{
 			totalChunks:   msg.TotalChunks,
-			received:      make([][]byte, msg.TotalChunks),
 			receivedCount: 0,
+			file:          file,
 		}
+
+		err = f.file.Truncate(int64(msg.TotalChunks) * int64(1024*1024))
+
+		if err != nil {
+			log.Printf("Error truncating file %v: %v", msg.Name, err)
+			return
+		}
+
 		incomingFiles[msg.Name] = f
 
 		runtime.EventsEmit(ctx, "receiving-started", map[string]string{
@@ -273,22 +293,43 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 			"totalChunks":   strconv.Itoa(msg.TotalChunks),
 			"totalReceived": "0",
 		})
+
 		p.lastSeen = time.Now()
 	}
 
-	if f.received[msg.ChunkIndex] == nil {
-		f.received[msg.ChunkIndex] = msg.Data
-		f.receivedCount++
+	hash := sha256.New()
+	hash.Write(msg.Data)
 
-		if time.Since(p.lastSeen) >= time.Second {
-			runtime.EventsEmit(ctx, "receiving-progress", map[string]string{
-				"id":            fileId,
-				"file":          msg.Name,
-				"totalChunks":   strconv.Itoa(msg.TotalChunks),
-				"totalReceived": strconv.Itoa(f.receivedCount),
-			})
-			p.lastSeen = time.Now()
+	finalHash := hash.Sum(nil)
+	receivedChecksum := fmt.Sprintf("%x", finalHash)
+
+	log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
+
+	if receivedChecksum == msg.Checksum {
+
+		chunkSize := 1024 * 1024
+
+		offset := int64(msg.ChunkIndex) * int64(chunkSize)
+
+		_, err := f.file.WriteAt(msg.Data, offset)
+
+		if err != nil {
+			log.Printf("Error writing to file %v: %v", msg.Name, err)
+			return
 		}
+		f.receivedCount++
+	} else {
+		log.Printf("Received CheckSum %v is not equal to calculated Checksum %v\n", receivedChecksum, msg.Checksum)
+	}
+
+	if time.Since(p.lastSeen) >= time.Second {
+		runtime.EventsEmit(ctx, "receiving-progress", map[string]string{
+			"id":            fileId,
+			"file":          msg.Name,
+			"totalChunks":   strconv.Itoa(msg.TotalChunks),
+			"totalReceived": strconv.Itoa(f.receivedCount),
+		})
+		p.lastSeen = time.Now()
 	}
 
 	//check if all chunks received
@@ -303,13 +344,29 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 		fileName := filepath.Base(msg.Name)
 
 		log.Printf("FileName: %v\n", fileName)
-
-		outFile, _ := os.Create(filepath.Join(downloadPath, fileName))
-
-		for _, chunk := range f.received {
-			outFile.Write(chunk)
+		err := f.file.Truncate(int64(msg.TotalChunks-1)*int64(1024*1024) + int64(len(msg.Data)))
+		if err != nil {
+			log.Printf("Error truncating file %v: %v", msg.Name, err)
+			return
 		}
-		outFile.Close()
+
+		hash := sha256.New()
+		_, err = f.file.Seek(0, io.SeekStart)
+
+		if err != nil {
+			log.Printf("Error seeking to file %v: %v", msg.Name, err)
+			return
+		}
+
+		if _, err := io.Copy(hash, f.file); err != nil {
+			log.Printf("Error reading file %v: %v", msg.Name, err)
+		}
+
+		receivedFileCheckSum := fmt.Sprintf("%x", hash.Sum(nil))
+
+		log.Printf("FileCheckSum: %v\n", receivedFileCheckSum)
+
+		f.file.Close()
 
 		for _, fn := range p.fileReceivedListeners {
 			fn(fileName)
@@ -317,7 +374,7 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 
 		log.Printf("Large file received %v\n", fileName)
 
-		time.Sleep(1 * time.Second)
+		//time.Sleep(1 * time.Second)
 
 		runtime.EventsEmit(ctx, "file-received", map[string]string{
 			"id":   fileId,

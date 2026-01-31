@@ -6,4 +6,5 @@ type Message struct {
 	Data        []byte `json:"data,omitempty"`
 	ChunkIndex  int    `json:"chunkIndex,omitempty"`
 	TotalChunks int    `json:"totalChunks,omitempty"`
+	Checksum    string `json:"checksum,omitempty"`
 }
