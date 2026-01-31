@@ -69,3 +69,9 @@ func (d *Discovery) GetPeerById(peerId string) *Peer {
 
 	return p
 }
+
+func (d *Discovery) RemovePeerById(peerId string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	delete(d.peers, peerId)
+}
