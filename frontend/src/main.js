@@ -2,7 +2,7 @@ console.log("🔥 frontend main.js loaded");
 import './style.css'
 
 import {
-    ClearTransferHistory,
+    ClearTransferHistory, DisconnectPeer,
     GetSettings,
     GetTransferHistories,
     HandshakePermission,
@@ -318,6 +318,15 @@ function hasSettingsChanged() {
 }
 
 clearSelection.addEventListener(("click"), () => {
+
+    if(receiverSelect.value.length > 0) {
+        DisconnectPeer(receiverSelect.value).then(r =>{
+            console.log("Receiver Select is disconnected");
+        });
+    }
+
+    console.log("Receiver Select Value: ", receiverSelect.value);
+
     document.getElementById("receiver-select").value = "";
 
     document.getElementById("selected-peer-name").textContent = "No Peer Selected";
