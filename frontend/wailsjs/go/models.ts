@@ -1,17 +1,5 @@
 export namespace app {
 	
-	export class PermissionManager {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new PermissionManager(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
-	    }
-	}
 	export class Settings {
 	    user_name: string;
 	    download_path: string;

@@ -36,4 +36,4 @@ export function SaveSettings(arg1:app.Settings):Promise<void>;
 
 export function SendFileToPeer(arg1:string,arg2:string):Promise<void>;
 
-export function Startup(arg1:context.Context,arg2:app.Settings,arg3:app.PermissionManager):Promise<void>;
+export function Startup(arg1:context.Context,arg2:app.Settings):Promise<void>;
