@@ -31,7 +31,7 @@ func (r *Registry) PauseAllByPeerId(peerId string) {
 	}
 }
 
-func (r *Registry) AddFileReceiving(peerId string, fileId string, status Status, chunkDone int64) *Transfer {
+func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName string, status Status, chunksReceived int64, totalChunks int64) *Transfer {
 	log.Printf("Add file when receiving \n")
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -40,10 +40,12 @@ func (r *Registry) AddFileReceiving(peerId string, fileId string, status Status,
 		return t
 	}
 	t := &Transfer{
-		FileId:    fileId,
-		PeerId:    peerId,
-		Status:    status,
-		ChunkDone: chunkDone,
+		PeerId:        peerId,
+		FileId:        fileId,
+		FileName:      fileName,
+		Status:        status,
+		ChunkReceived: chunksReceived,
+		TotalChunks:   totalChunks,
 	}
 
 	r.byPeer[peerId] = append(r.byPeer[peerId], t)
