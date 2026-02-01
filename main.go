@@ -53,6 +53,12 @@ func main() {
 	selfPeer.UserName = userName
 	//start registering
 	go func() {
+		err := d.Register(ctx, selfPeer, userName)
+		if err != nil {
+			log.Printf("Error registering peer: %v", err)
+			cancel()
+		}
+
 		ticker := time.NewTicker(30 * time.Second)
 		for range ticker.C {
 			if err := d.Register(ctx, selfPeer, userName); err != nil {
@@ -64,6 +70,12 @@ func main() {
 
 	//start browsing
 	go func() {
+
+		err := d.Browse(ctx, *selfPeer)
+		if err != nil {
+			log.Println(err)
+			cancel()
+		}
 		ticker := time.NewTicker(30 * time.Second)
 		for range ticker.C {
 			err := d.Browse(ctx, *selfPeer)
