@@ -71,11 +71,6 @@ func (a *App) bindSession(p *session.PeerSession) {
 		}
 		a.discovery.RemovePeerById(peer.ID)
 	})
-
-	p.OnFileOffer(func(peerId string, fileName string, fileId string, status transfer.Status, chunkReceived int64, totalChunks int64) {
-		log.Printf("File offer: in Bind Session %s by %v\n", fileId, peerId)
-		a.transferRegistry.AddFileReceiving(peerId, fileId, fileName, status, chunkReceived, totalChunks)
-	})
 }
 
 var peerSessions = make(map[string]*session.PeerSession)
