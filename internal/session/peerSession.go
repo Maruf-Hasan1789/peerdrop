@@ -211,12 +211,16 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 	log.Printf("total chunks %v\n", totalChunks)
 
 	buf := make([]byte, chunkSize)
-	fileId := fmt.Sprintf("%v-%v", path, time.Now().Unix())
+
+	fileName := filepath.Base(path)
+	fileId := fmt.Sprintf("%v-%v", fileName, time.Now().UnixNano())
 
 	runtime.EventsEmit(ctx, "transfer-start", map[string]string{
 		"id":       fileId,
 		"fileName": filepath.Base(path),
 	})
+
+	log.Printf("File Id %v\n", fileId)
 
 	for i := 0; i < totalChunks; i++ {
 		n, err := f.Read(buf)
@@ -232,10 +236,12 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		msg := protocol.Message{
 			Type:        "file-chunk",
 			Name:        filepath.Base(path),
+			Id:          fileId,
 			Data:        buf[:n],
 			ChunkIndex:  i,
 			TotalChunks: totalChunks,
 			Checksum:    fmt.Sprintf("%x", checkSum),
+			Allowed:     true,
 		}
 
 		if err := p.send(msg); err != nil {
@@ -268,7 +274,7 @@ func emitTransferFailedEvent(ctx context.Context, fileId string, path string) {
 func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, downloadPath string) {
 	f, ok := incomingFiles[msg.Name]
 
-	fileId := fmt.Sprintf("%v-%v", msg.Name, time.Now().Unix())
+	fileId := msg.Id
 
 	if !ok {
 		file, err := os.OpenFile(filepath.Join(downloadPath, msg.Name), os.O_CREATE|os.O_RDWR, 0644)
@@ -311,6 +317,7 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 	receivedChecksum := fmt.Sprintf("%x", finalHash)
 
 	log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
+	log.Printf("File Id %v\n", fileId)
 
 	if receivedChecksum == msg.Checksum {
 
