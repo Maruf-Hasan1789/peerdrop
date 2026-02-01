@@ -4,9 +4,15 @@ import (
 	"log"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+const (
+	ChunkSize = 1024 * 1024
 )
 
 func (a *App) HandleConnection(conn transport.Connection) {
@@ -31,9 +37,21 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		log.Printf("Session error %v\n", err)
 	})
 
-	peerSession.OnFileOffer(func(peerId string, fileId string, FileStatus transfer.Status, bytesDone int64) {
-		log.Printf("Peer session on file offer in handler %v %v %v %v\n", peerId, fileId, FileStatus, bytesDone)
-		a.transferRegistry.AddFileReceiving(peerId, fileId, FileStatus, bytesDone)
+	peerSession.OnFileOffer(func(peerId string, fileName string, fileId string, status transfer.Status, chunkReceived int64, totalChunks int64) {
+		log.Printf("Peer session on file offer in handler %v %v %v %v\n", peerId, fileId, status, totalChunks)
+		a.transferRegistry.AddFileReceiving(peerId, fileId, fileName, status, chunkReceived, totalChunks)
+		peer := peerSession.GetPeerInfo()
+		senderInfo := discovery.SenderInfo{
+			ID:       peerId,
+			Name:     peer.Name,
+			UserName: peer.UserName,
+			Files: []domain.FileMetadata{{
+				ID:       fileId,
+				FileName: fileName,
+				FileSize: totalChunks * ChunkSize,
+			}},
+		}
+		runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
 	})
 
 	peerSession.Start(a.settings.DownloadPath)

@@ -72,9 +72,9 @@ func (a *App) bindSession(p *session.PeerSession) {
 		a.discovery.RemovePeerById(peer.ID)
 	})
 
-	p.OnFileOffer(func(peerId string, fileId string, status transfer.Status, bytesDone int64) {
+	p.OnFileOffer(func(peerId string, fileName string, fileId string, status transfer.Status, chunkReceived int64, totalChunks int64) {
 		log.Printf("File offer: in Bind Session %s by %v\n", fileId, peerId)
-		a.transferRegistry.AddFileReceiving(peerId, fileId, status, bytesDone)
+		a.transferRegistry.AddFileReceiving(peerId, fileId, fileName, status, chunkReceived, totalChunks)
 	})
 }
 
@@ -240,7 +240,8 @@ func (a *App) GetTransferHistories() []transferHistory {
 }
 
 func (a *App) HandshakePermission(peerId string, allowed bool) {
-	a.permissionManager.Resolve(peerId, allowed)
+	log.Printf("Handshake Permission %v %v\n", peerId, allowed)
+	//a.permissionManager.Resolve(peerId, allowed)
 }
 
 func (a *App) ClearTransferHistory() {

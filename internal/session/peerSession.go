@@ -43,7 +43,7 @@ type PeerSession struct {
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
 	fileReceivedListeners []func(name string)
-	onFileOffer           func(peerId string, fileId string, status transfer.Status, chunksDone int64)
+	onFileOffer           func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)
 
 	//message handlers map
 	handlers map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
@@ -96,7 +96,7 @@ func (p *PeerSession) OnFileReceived(fn func(name string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
-func (p *PeerSession) OnFileOffer(fn func(peerId string, fileId string, FileStatus transfer.Status, bytesDone int64)) {
+func (p *PeerSession) OnFileOffer(fn func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)) {
 	p.onFileOffer = fn
 }
 
@@ -313,8 +313,6 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 			return
 		}
 
-		p.onFileOffer(p.peer.ID, fileId, transfer.InProgress, 0)
-
 		incomingFiles[msg.Name] = f
 		runtime.EventsEmit(ctx, "receiving-started", map[string]string{
 			"id":            fileId,
@@ -435,6 +433,6 @@ func (p *PeerSession) handleFileOffer(ctx context.Context, msg protocol.Message,
 	log.Printf("HandleFile Offer %v\n", msg)
 
 	if p.onFileOffer != nil {
-		p.onFileOffer(p.peer.ID, msg.Id, transfer.InProgress, 0)
+		p.onFileOffer(p.peer.ID, msg.Name, msg.Id, transfer.InProgress, 0, int64(msg.TotalChunks))
 	}
 }
