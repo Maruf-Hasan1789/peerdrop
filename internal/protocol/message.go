@@ -9,4 +9,5 @@ type Message struct {
 	TotalChunks int    `json:"totalChunks,omitempty"`
 	Checksum    string `json:"checksum,omitempty"`
 	Allowed     bool   `json:"allowed,omitempty"`
+	ChunkSize   int    `json:"chunkSize,omitempty"`
 }

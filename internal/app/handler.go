@@ -32,7 +32,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	})
 
 	peerSession.OnFileOffer(func(peerId string, fileId string, FileStatus transfer.Status, bytesDone int64) {
-		log.Printf("Peer session on file offer %v %v %v %v\n", peerId, fileId, FileStatus, bytesDone)
+		log.Printf("Peer session on file offer in handler %v %v %v %v\n", peerId, fileId, FileStatus, bytesDone)
 		a.transferRegistry.AddFileReceiving(peerId, fileId, FileStatus, bytesDone)
 	})
 

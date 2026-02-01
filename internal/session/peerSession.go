@@ -65,6 +65,7 @@ func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession
 	p.handlers["file"] = p.handleFile
 	p.handlers["text"] = p.handleText
 	p.handlers["file-chunk"] = p.handleChunk
+	p.handlers["file-offer"] = p.handleFileOffer
 	return p
 }
 
@@ -221,6 +222,21 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 	})
 
 	log.Printf("File Id %v\n", fileId)
+
+	fileOffer := protocol.Message{
+		Type:        "file-offer",
+		Name:        fileName,
+		Id:          fileId,
+		Data:        nil,
+		TotalChunks: totalChunks,
+		ChunkSize:   chunkSize,
+		Checksum:    "checkSum",
+	}
+
+	if err := p.send(fileOffer); err != nil {
+		log.Printf("Error sending file-offer: %v", err)
+		return err
+	}
 
 	for i := 0; i < totalChunks; i++ {
 		n, err := f.Read(buf)
@@ -412,5 +428,13 @@ func (p *PeerSession) handleDisconnect(err error) {
 
 	if p.onError != nil && err != io.EOF {
 		p.onError(err)
+	}
+}
+
+func (p *PeerSession) handleFileOffer(ctx context.Context, msg protocol.Message, path string) {
+	log.Printf("HandleFile Offer %v\n", msg)
+
+	if p.onFileOffer != nil {
+		p.onFileOffer(p.peer.ID, msg.Id, transfer.InProgress, 0)
 	}
 }
