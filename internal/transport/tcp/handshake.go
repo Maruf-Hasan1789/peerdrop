@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
 type Hello struct {
@@ -21,7 +19,6 @@ type Hello struct {
 	Port     int
 	Version  string
 	UserName string
-	Files    []domain.FileMetadata
 }
 
 type PermissionResponse struct {
@@ -40,7 +37,7 @@ const (
 	PermBusy
 )
 
-func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, options *protocol.HandshakeOptions) error {
+func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) error {
 	log.Printf("Here in handshake\n")
 	_ = conn.conn.SetDeadline(time.Now().Add(30 * time.Second))
 
@@ -48,7 +45,7 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, o
 
 	//send hello
 	if conn.role == outbound {
-		if err := sendHello(ctx, conn.conn, peer, options); err != nil {
+		if err := sendHello(ctx, conn.conn, peer); err != nil {
 			return err
 		}
 	}
@@ -68,14 +65,14 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, o
 	}
 
 	if conn.role == inbound {
-		if err := sendHello(ctx, conn.conn, peer, options); err != nil {
+		if err := sendHello(ctx, conn.conn, peer); err != nil {
 			return err
 		}
 	}
 
 	log.Printf("Remote Hello %v", remoteHello)
 
-	if options.PermissionFunc != nil {
+	/*if options.PermissionFunc != nil {
 		//receiver part
 		allowed, err := options.PermissionFunc(ctx, discovery.SenderInfo{
 			ID:       remoteHello.ID,
@@ -122,6 +119,8 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer, o
 		log.Printf("Permission allowed by user\n")
 	}
 
+	*/
+
 	conn.peer = discovery.Peer{
 		ID:        remoteHello.ID,
 		Name:      remoteHello.Name,
@@ -148,7 +147,7 @@ func receivePermission(conn net.Conn) (*PermissionResponse, error) {
 	return permissionResponse, nil
 }
 
-func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer, options *protocol.HandshakeOptions) error {
+func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer) error {
 	log.Printf("Sending Hello %v\n", peer)
 	hello := &Hello{
 		ID:       peer.ID,
@@ -156,7 +155,6 @@ func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer, options *
 		Port:     peer.Port,
 		Version:  peer.Version,
 		UserName: peer.UserName,
-		Files:    options.SendOptions.Files,
 	}
 
 	log.Printf("Marshalling Hello %v\n", hello)

@@ -30,10 +30,10 @@ func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
 	}
 }
 
-func (a *App) Startup(ctx context.Context, settings *Settings, permissionManager *PermissionManager) {
+func (a *App) Startup(ctx context.Context, settings *Settings) {
 	a.ctx = ctx
 	a.settings = settings
-	a.permissionManager = permissionManager
+	//a.permissionManager = permissionManager
 	_, err := loadOrCreateTransferHistory()
 
 	if err != nil {
