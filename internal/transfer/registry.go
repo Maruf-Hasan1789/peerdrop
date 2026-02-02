@@ -53,6 +53,27 @@ func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName strin
 
 	return t
 }
+func (r *Registry) AddFileSending(peerId string, fileId string, fileName string, status Status, chunksSent int64, totalChunks int64) *Transfer {
+	log.Printf("Add file when sending \n")
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if t, ok := r.byFileId[fileId]; ok {
+		return t
+	}
+
+	t := &Transfer{
+		PeerId:        peerId,
+		FileId:        fileId,
+		FileName:      fileName,
+		Status:        status,
+		ChunkReceived: chunksSent,
+		TotalChunks:   totalChunks,
+	}
+
+	r.byPeer[peerId] = append(r.byPeer[peerId], t)
+	r.byFileId[fileId] = t
+	return t
+}
 
 func (r *Registry) RemoveFileReceivingUponCompletion(peerId string, fileId string) {
 	log.Printf("Remove file receiving upon completion\n")
@@ -69,4 +90,10 @@ func (r *Registry) RemoveFileReceivingUponCompletion(peerId string, fileId strin
 	if len(r.byPeer[peerId]) == 0 {
 		delete(r.byPeer, peerId)
 	}
+}
+
+func (r *Registry) GetAllTransfersByPeerId(peerId string) []*Transfer {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.byPeer[peerId]
 }

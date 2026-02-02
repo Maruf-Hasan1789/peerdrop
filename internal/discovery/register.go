@@ -13,7 +13,6 @@ func (d *Discovery) Register(ctx context.Context, selfPeer *Peer, userName strin
 	time.Sleep(10 * time.Second)
 	log.Printf("Started registering")
 	userInfo := fmt.Sprintf("user_name=%s", userName)
-
 	server, err := zeroconf.Register(
 		selfPeer.Name,
 		"_peerdrop._tcp",
