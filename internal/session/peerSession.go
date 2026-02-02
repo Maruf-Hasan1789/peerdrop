@@ -446,8 +446,8 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 		//time.Sleep(1 * time.Second)
 
 		runtime.EventsEmit(ctx, "file-received", map[string]string{
-			"id":   fileId,
-			"file": fileName,
+			"fileName": fileName,
+			"peer":     p.peer.UserName,
 		})
 
 		delete(incomingFiles, msg.Name)
