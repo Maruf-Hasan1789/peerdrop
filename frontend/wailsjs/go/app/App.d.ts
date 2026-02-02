@@ -16,8 +16,6 @@ export function GetTransferHistories():Promise<Array<app.transferHistory>>;
 
 export function HandleConnection(arg1:transport.Connection):Promise<void>;
 
-export function HandshakePermission(arg1:string,arg2:boolean):Promise<void>;
-
 export function ListPeers():Promise<Array<discovery.PeerDTO>>;
 
 export function Name(arg1:string):Promise<string>;
@@ -29,6 +27,8 @@ export function OnPeerRemoved(arg1:discovery.Peer):Promise<void>;
 export function PickDownloadFolder():Promise<string>;
 
 export function PickFile():Promise<string>;
+
+export function ReceiveFilePermission(arg1:string,arg2:string,arg3:string,arg4:boolean):Promise<void>;
 
 export function RegisterSession(arg1:session.PeerSession):Promise<void>;
 

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
@@ -16,17 +18,24 @@ import (
 )
 
 type App struct {
-	ctx               context.Context
-	discovery         *discovery.Discovery
-	settings          *Settings
-	permissionManager *PermissionManager
-	transferRegistry  *transfer.Registry
+	ctx                context.Context
+	discovery          *discovery.Discovery
+	settings           *Settings
+	permissionManager  *PermissionManager
+	transferRegistry   *transfer.Registry
+	pendingPermissions map[string]pendingPermission
+	mu                 sync.Mutex
+}
+
+type pendingPermission struct {
+	session *session.PeerSession
 }
 
 func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
 	return &App{
-		discovery:        d,
-		transferRegistry: registry,
+		discovery:          d,
+		transferRegistry:   registry,
+		pendingPermissions: make(map[string]pendingPermission),
 	}
 }
 
@@ -234,9 +243,30 @@ func (a *App) GetTransferHistories() []transferHistory {
 	return sentHistories
 }
 
-func (a *App) HandshakePermission(peerId string, allowed bool) {
-	log.Printf("Handshake Permission %v %v\n", peerId, allowed)
-	//a.permissionManager.Resolve(peerId, allowed)
+func (a *App) ReceiveFilePermission(peerId string, fileName string, fileId string, allow bool) {
+	log.Printf("Receive File Permission %v %v\n", peerId, fileName, fileId, allow)
+
+	permissionResponse := protocol.Message{
+		Type:    "file-permission",
+		Name:    fileName,
+		Id:      fileId,
+		Allowed: allow,
+	}
+
+	a.mu.Lock()
+	p, ok := a.pendingPermissions[fileId]
+	delete(a.pendingPermissions, fileId)
+	a.mu.Unlock()
+
+	if !ok {
+		return
+	}
+	err := p.session.Send(permissionResponse)
+	log.Printf("Sending permission response %v\n", permissionResponse)
+	if err != nil {
+		log.Printf("Error sending permission response: %v\n", err)
+		return
+	}
 }
 
 func (a *App) ClearTransferHistory() {

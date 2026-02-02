@@ -51,6 +51,15 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				FileSize: totalChunks * ChunkSize,
 			}},
 		}
+
+		a.mu.Lock()
+
+		a.pendingPermissions[fileId] = pendingPermission{
+			session: peerSession,
+		}
+
+		a.mu.Unlock()
+
 		runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
 	})
 
