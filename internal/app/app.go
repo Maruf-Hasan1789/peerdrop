@@ -322,4 +322,6 @@ func (a *App) DisconnectPeer(peerId string) {
 	}
 	_ = peerSession.Stop()
 	delete(peerSessions, peerId)
+	log.Info("Peer disconnected %v", peerId)
+	log.Printf("Peer List %v\n", a.ListPeers())
 }
