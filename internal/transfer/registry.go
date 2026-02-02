@@ -31,7 +31,7 @@ func (r *Registry) PauseAllByPeerId(peerId string) {
 	}
 }
 
-func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName string, status Status, chunksReceived int64, totalChunks int64) *Transfer {
+func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName string, status Status, chunksReceived int64, totalChunks int64, direction Direction) *Transfer {
 	log.Printf("Add file when receiving \n")
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -46,6 +46,7 @@ func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName strin
 		Status:        status,
 		ChunkReceived: chunksReceived,
 		TotalChunks:   totalChunks,
+		Direction:     direction,
 	}
 
 	r.byPeer[peerId] = append(r.byPeer[peerId], t)
@@ -53,7 +54,7 @@ func (r *Registry) AddFileReceiving(peerId string, fileId string, fileName strin
 
 	return t
 }
-func (r *Registry) AddFileSending(peerId string, fileId string, fileName string, status Status, chunksSent int64, totalChunks int64) *Transfer {
+func (r *Registry) AddFileSending(peerId string, fileId string, fileName string, status Status, chunksSent int64, totalChunks int64, direction Direction) *Transfer {
 	log.Printf("Add file when sending \n")
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -68,6 +69,7 @@ func (r *Registry) AddFileSending(peerId string, fileId string, fileName string,
 		Status:        status,
 		ChunkReceived: chunksSent,
 		TotalChunks:   totalChunks,
+		Direction:     direction,
 	}
 
 	r.byPeer[peerId] = append(r.byPeer[peerId], t)
@@ -81,7 +83,7 @@ func (r *Registry) RemoveFileReceivingUponCompletion(peerId string, fileId strin
 	defer r.mu.Unlock()
 	delete(r.byFileId, fileId)
 	for i, t := range r.byPeer[peerId] {
-		if t.FileId == fileId {
+		if t.FileId == fileId && t.Direction == Incoming {
 			r.byPeer[peerId] = append(r.byPeer[peerId][:i], r.byPeer[peerId][i+1:]...)
 			break
 		}
@@ -96,4 +98,21 @@ func (r *Registry) GetAllTransfersByPeerId(peerId string) []*Transfer {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.byPeer[peerId]
+}
+
+func (r *Registry) RemoveFileUponSendingCompletion(peerId string, fileId string) {
+	log.Printf("Remove file after sending completion\n")
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.byFileId, fileId)
+	for i, t := range r.byPeer[peerId] {
+		if t.FileId == fileId && t.Direction == Outgoing {
+			r.byPeer[peerId] = append(r.byPeer[peerId][:i], r.byPeer[peerId][i+1:]...)
+			break
+		}
+	}
+
+	if len(r.byPeer[peerId]) == 0 {
+		delete(r.byPeer, peerId)
+	}
 }

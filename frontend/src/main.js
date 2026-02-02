@@ -644,6 +644,10 @@ EventsOn("file-received", (payload) => {
     }
 });
 
+EventsOn("receiving-failed", (payload) => {
+   console.log("Receiving Failed ", payload)
+});
+
 // --- UI creators ---
 function createReceiveCard(key, fileName) {
     if (receivingTransfers.has(key)) return;

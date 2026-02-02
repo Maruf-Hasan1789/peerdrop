@@ -43,7 +43,7 @@ type PeerSession struct {
 	//event listeners
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
-	fileReceivedListeners []func(name string)
+	fileReceivedListeners []func(peerId string, fileId string, fileName string)
 	onFileOffer           func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)
 
 	//message handlers map
@@ -98,7 +98,7 @@ func (p *PeerSession) OnError(fn func(err error)) {
 	p.onError = fn
 }
 
-func (p *PeerSession) OnFileReceived(fn func(name string)) {
+func (p *PeerSession) OnFileReceived(fn func(peerId string, fileId string, fileName string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
@@ -170,7 +170,7 @@ func (p *PeerSession) handleFile(ctx context.Context, msg protocol.Message, down
 	log.Printf("File received %v\n", fileName)
 
 	for _, fn := range p.fileReceivedListeners {
-		fn(fileName)
+		fn(p.peer.ID, msg.Id, fileName)
 	}
 }
 
@@ -371,8 +371,8 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 	finalHash := hash.Sum(nil)
 	receivedChecksum := fmt.Sprintf("%x", finalHash)
 
-	log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
-	log.Printf("File Id %v\n", fileId)
+	//log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
+	//log.Printf("File Id %v\n", fileId)
 
 	if receivedChecksum == msg.Checksum {
 
@@ -438,7 +438,7 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 		f.file.Close()
 
 		for _, fn := range p.fileReceivedListeners {
-			fn(fileName)
+			fn(p.peer.ID, fileId, fileName)
 		}
 
 		log.Printf("Large file received %v\n", fileName)
@@ -462,6 +462,7 @@ func (p *PeerSession) handleDisconnect(err error) {
 	log.Printf("Peer disconnected during reading %v %v\n", p.peer.Name, err)
 
 	if p.onDisconnected != nil {
+		log.Printf("Peer On Disconnected Provided: %v\n", p.peer.Name)
 		p.onDisconnected(p.peer)
 	}
 
