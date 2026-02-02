@@ -110,15 +110,24 @@ func (p *PeerSession) readLoop(ctx context.Context, downloadPath string) {
 	defer close(p.done)
 
 	for {
-		data, err := p.conn.Receive()
-
-		if err != nil {
-			log.Printf("Peer disconnected during reading %v\n", err)
-			p.handleDisconnect(err)
+		select {
+		case <-ctx.Done():
 			return
-		}
+		default:
+			data, err := p.conn.Receive()
 
-		p.handleMessage(ctx, data, downloadPath)
+			if err != nil {
+				if ctx.Err() == nil {
+					log.Printf("Peer disconnected during reading %v\n", err)
+					p.handleDisconnect(err)
+					return
+				}
+
+				log.Printf("Peer session stopped due to context cancellation\n")
+			}
+
+			p.handleMessage(ctx, data, downloadPath)
+		}
 	}
 }
 
