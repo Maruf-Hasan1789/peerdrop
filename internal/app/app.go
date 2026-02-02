@@ -62,8 +62,9 @@ func (a *App) bindSession(p *session.PeerSession) {
 		log.Printf("File received: in Bind Session %s", fileName)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
-				"name": fileName,
-				"peer": p.GetPeerInfo().UserName,
+				"id":       fileId,
+				"fileName": fileName,
+				"peer":     p.GetPeerInfo().UserName,
 			})
 		}
 	})

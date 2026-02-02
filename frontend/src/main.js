@@ -643,7 +643,7 @@ EventsOn("receiving-progress", (payload) => {
 
 EventsOn("file-received", (payload) => {
     // payload: { id, fileName }
-    const key = payload.fileName;
+    const key = payload.id;
 
     if (receivingTransfers.has(key)) {
         updateReceiveProgress(key, 100);
