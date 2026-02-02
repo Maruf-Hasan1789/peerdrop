@@ -58,18 +58,18 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
-	p.OnFileReceived(func(name string) {
-		log.Printf("File received: in Bind Session %s", name)
+	p.OnFileReceived(func(peerId string, fileId string, fileName string) {
+		log.Printf("File received: in Bind Session %s", fileName)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
-				"name": name,
+				"name": fileName,
 				"peer": p.GetPeerInfo().UserName,
 			})
 		}
 	})
 
 	p.OnDisconnected(func(peer discovery.Peer) {
-		log.Printf("peer disconnected %v %v\n", peer.Name, peer.UserName)
+		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
 			a.transferRegistry.PauseAllByPeerId(peer.ID)
 			log.Printf("Emitting Events\n")
@@ -78,7 +78,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 			transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peer.ID)
 
 			for _, t := range transferRegistry {
-				if t.PeerId == peer.ID && t.Status == transfer.Paused {
+				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
 
 					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED")
 					if err != nil {
@@ -166,9 +166,10 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 	fileName := filepath.Base(filePath)
 	fileId := fmt.Sprintf("%v-%v", fileName, time.Now().UnixNano())
 
-	a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0)
+	a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
 
 	err := selectedPeerSession.SendLargeFile(a.ctx, filePath, 1024*1024, fileId)
+
 	if err != nil {
 		_ = selectedPeerSession.Stop()
 		delete(peerSessions, peerId)
@@ -186,6 +187,7 @@ func (a *App) SendFileToPeer(peerId string, filePath string) error {
 		return fmt.Errorf("Error while creating connection during dialing %v\n", err)
 	}
 
+	a.transferRegistry.RemoveFileUponSendingCompletion(peerId, fileId)
 	log.Printf("Sending file to peer %v\n", peerId)
 
 	err = addNewTransferFileHistory(selectedPeerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "COMPLETED")
@@ -281,7 +283,7 @@ func (a *App) GetTransferHistories() []transferHistory {
 }
 
 func (a *App) ReceiveFilePermission(peerId string, fileName string, fileId string, allow bool) {
-	log.Printf("Receive File Permission %v %v\n", peerId, fileName, fileId, allow)
+	log.Printf("Receive File Permission %v %v %v %v\n", peerId, fileName, fileId, allow)
 
 	permissionResponse := protocol.Message{
 		Type:    "file-permission",

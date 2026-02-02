@@ -1,6 +1,12 @@
 package transfer
 
 type Status int
+type Direction int
+
+const (
+	Incoming Direction = iota
+	Outgoing
+)
 
 const (
 	Pending Status = iota
@@ -17,4 +23,5 @@ type Transfer struct {
 	Status        Status
 	ChunkReceived int64
 	TotalChunks   int64
+	Direction     Direction
 }
