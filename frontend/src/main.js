@@ -5,7 +5,7 @@ import {
     ClearTransferHistory, DisconnectPeer,
     GetSettings,
     GetTransferHistories,
-    HandshakePermission,
+    ReceiveFilePermission,
     ListPeers,
     PickDownloadFolder,
     PickFile,
@@ -516,12 +516,12 @@ function showPermissionPopup(sender) {
     modal.style.display = "flex";
 
     document.getElementById("allow-btn").onclick = () => {
-        HandshakePermission(sender.id, true).then(r => console.log("Permission granted"));
+        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, true).then(r => console.log("Permission granted"));
         modal.style.display = "none";
     };
 
     document.getElementById("deny-btn").onclick = () => {
-        HandshakePermission(sender.id, false).then(r => console.log("Permission denied"));
+        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, false).then(r => console.log("Permission denied"));
         modal.style.display = "none";
     };
 }

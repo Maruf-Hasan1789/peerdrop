@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
@@ -46,26 +47,30 @@ type PeerSession struct {
 	onFileOffer           func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)
 
 	//message handlers map
-	handlers map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
+	handlers               map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
+	fileSendingPermissions map[string]chan bool
+	mu                     sync.Mutex
 }
 
 func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession {
 	ctx, cancel := context.WithCancel(ctx)
 	p := &PeerSession{
-		ctx:         ctx,
-		cancel:      cancel,
-		conn:        conn,
-		peer:        conn.PeerInfo(),
-		done:        make(chan struct{}),
-		connectedAt: time.Now(),
-		handlers:    make(map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)),
-		lastSeen:    time.Now(),
+		ctx:                    ctx,
+		cancel:                 cancel,
+		conn:                   conn,
+		peer:                   conn.PeerInfo(),
+		done:                   make(chan struct{}),
+		connectedAt:            time.Now(),
+		handlers:               make(map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)),
+		lastSeen:               time.Now(),
+		fileSendingPermissions: make(map[string]chan bool),
 	}
 
 	p.handlers["file"] = p.handleFile
 	p.handlers["text"] = p.handleText
 	p.handlers["file-chunk"] = p.handleChunk
 	p.handlers["file-offer"] = p.handleFileOffer
+	p.handlers["file-permission"] = p.handleFilePermission
 	return p
 }
 
@@ -163,7 +168,7 @@ func (p *PeerSession) SendText(text string) error {
 		Type: "text",
 		Data: []byte(text),
 	}
-	return p.send(msg)
+	return p.Send(msg)
 }
 
 func (p *PeerSession) SendFile(path string) error {
@@ -179,10 +184,10 @@ func (p *PeerSession) SendFile(path string) error {
 		Data: data,
 	}
 
-	return p.send(msg)
+	return p.Send(msg)
 }
 
-func (p *PeerSession) send(msg protocol.Message) error {
+func (p *PeerSession) Send(msg protocol.Message) error {
 	log.Printf("Sending file %v\n", msg.ChunkIndex)
 	payload, err := json.Marshal(msg)
 
@@ -233,9 +238,20 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		Checksum:    "checkSum",
 	}
 
-	if err := p.send(fileOffer); err != nil {
+	permCh := p.waitForPermission(fileId)
+
+	if err := p.Send(fileOffer); err != nil {
 		log.Printf("Error sending file-offer: %v", err)
 		return err
+	}
+
+	select {
+	case allowed := <-permCh:
+		if !allowed {
+			return fmt.Errorf("permission denied by User")
+		}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 
 	for i := 0; i < totalChunks; i++ {
@@ -260,7 +276,7 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 			Allowed:     true,
 		}
 
-		if err := p.send(msg); err != nil {
+		if err := p.Send(msg); err != nil {
 			emitTransferFailedEvent(ctx, fileId, path)
 			return err
 		}
@@ -435,4 +451,26 @@ func (p *PeerSession) handleFileOffer(ctx context.Context, msg protocol.Message,
 	if p.onFileOffer != nil {
 		p.onFileOffer(p.peer.ID, msg.Name, msg.Id, transfer.InProgress, 0, int64(msg.TotalChunks))
 	}
+}
+
+func (p *PeerSession) handleFilePermission(ctx context.Context, msg protocol.Message, path string) {
+	p.mu.Lock()
+	ch := p.fileSendingPermissions[msg.Id]
+	p.mu.Unlock()
+
+	delete(p.fileSendingPermissions, msg.Id)
+
+	if ch == nil {
+		log.Printf("Permission Channel is missing\n")
+	}
+
+	ch <- msg.Allowed
+}
+
+func (p *PeerSession) waitForPermission(fileId string) <-chan bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	ch := make(chan bool)
+	p.fileSendingPermissions[fileId] = ch
+	return ch
 }
