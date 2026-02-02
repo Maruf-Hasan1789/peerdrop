@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
@@ -58,14 +57,15 @@ func main() {
 			log.Printf("Error registering peer: %v", err)
 			cancel()
 		}
-
-		ticker := time.NewTicker(30 * time.Second)
+		/*ticker := time.NewTicker(30 * time.Second)
 		for range ticker.C {
 			if err := d.Register(ctx, selfPeer, userName); err != nil {
 				log.Println(err)
 				cancel()
 			}
 		}
+
+		*/
 	}()
 
 	//start browsing
@@ -76,14 +76,17 @@ func main() {
 			log.Println(err)
 			cancel()
 		}
-		ticker := time.NewTicker(30 * time.Second)
-		for range ticker.C {
-			err := d.Browse(ctx, *selfPeer)
-			if err != nil {
-				log.Println(err)
-				cancel()
+		/*
+			ticker := time.NewTicker(30 * time.Second)
+			for range ticker.C {
+				err := d.Browse(ctx, *selfPeer)
+				if err != nil {
+					log.Println(err)
+					cancel()
+				}
 			}
-		}
+
+		*/
 	}()
 
 	if err != nil {

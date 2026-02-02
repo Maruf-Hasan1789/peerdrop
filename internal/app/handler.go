@@ -30,7 +30,14 @@ func (a *App) HandleConnection(conn transport.Connection) {
 
 	peerSession.OnDisconnected(func(peer discovery.Peer) {
 		a.transferRegistry.PauseAllByPeerId(peer.ID)
+		err := peerSession.Stop()
+
+		if err != nil {
+			return
+		}
+		runtime.EventsEmit(a.ctx, "peer-disconnected", discovery.ToPeerDTO(peer))
 		log.Printf("Peer disconnected %v\n", peer.Name)
+		a.discovery.RemovePeerById(peer.ID)
 	})
 
 	peerSession.OnError(func(err error) {
