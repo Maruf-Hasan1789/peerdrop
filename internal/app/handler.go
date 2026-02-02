@@ -60,7 +60,11 @@ func (a *App) HandleConnection(conn transport.Connection) {
 
 		a.mu.Unlock()
 
-		runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
+		if a.settings.IsPermissionRequiredToSendFiles {
+			runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
+		} else {
+			a.ReceiveFilePermission(peerId, fileName, fileId, true)
+		}
 	})
 
 	peerSession.Start(a.settings.DownloadPath)
