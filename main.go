@@ -6,11 +6,9 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/wailsapp/wails/v2"
@@ -54,25 +52,41 @@ func main() {
 	selfPeer.UserName = userName
 	//start registering
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
+		err := d.Register(ctx, selfPeer, userName)
+		if err != nil {
+			log.Printf("Error registering peer: %v", err)
+			cancel()
+		}
+		/*ticker := time.NewTicker(30 * time.Second)
 		for range ticker.C {
 			if err := d.Register(ctx, selfPeer, userName); err != nil {
 				log.Println(err)
 				cancel()
 			}
 		}
+
+		*/
 	}()
 
 	//start browsing
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		for range ticker.C {
-			err := d.Browse(ctx, *selfPeer)
-			if err != nil {
-				log.Println(err)
-				cancel()
-			}
+
+		err := d.Browse(ctx, *selfPeer)
+		if err != nil {
+			log.Println(err)
+			cancel()
 		}
+		/*
+			ticker := time.NewTicker(30 * time.Second)
+			for range ticker.C {
+				err := d.Browse(ctx, *selfPeer)
+				if err != nil {
+					log.Println(err)
+					cancel()
+				}
+			}
+
+		*/
 	}()
 
 	if err != nil {
@@ -83,21 +97,21 @@ func main() {
 	wailsApp = app.NewApp(d, transferRegistry)
 	d.AddObserver(wailsApp)
 
-	permissionManager := app.NewPermissionManager(settings)
-	handshakeOptions := &protocol.HandshakeOptions{
-		PermissionFunc: permissionManager.Request,
-	}
+	//permissionManager := app.NewPermissionManager(settings)
+	//handshakeOptions := &protocol.HandshakeOptions{
+	//	PermissionFunc: permissionManager.Request,
+	//}
 
 	err = wails.Run(&options.App{
 		Title:  "PeerDrop",
 		Width:  1920,
 		Height: 1080,
 		OnStartup: func(ctx context.Context) {
-			wailsApp.Startup(ctx, settings, permissionManager)
+			wailsApp.Startup(ctx, settings)
 
 			go func() {
 				for {
-					conn, err := listener.Accept(ctx, selfPeer, handshakeOptions)
+					conn, err := listener.Accept(ctx, selfPeer)
 
 					if err != nil {
 						log.Printf("Error while getting connection from listener %v\n", err)

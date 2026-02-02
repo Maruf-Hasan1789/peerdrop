@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
@@ -16,24 +19,31 @@ import (
 )
 
 type App struct {
-	ctx               context.Context
-	discovery         *discovery.Discovery
-	settings          *Settings
-	permissionManager *PermissionManager
-	transferRegistry  *transfer.Registry
+	ctx                context.Context
+	discovery          *discovery.Discovery
+	settings           *Settings
+	permissionManager  *PermissionManager
+	transferRegistry   *transfer.Registry
+	pendingPermissions map[string]pendingPermission
+	mu                 sync.Mutex
+}
+
+type pendingPermission struct {
+	session *session.PeerSession
 }
 
 func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
 	return &App{
-		discovery:        d,
-		transferRegistry: registry,
+		discovery:          d,
+		transferRegistry:   registry,
+		pendingPermissions: make(map[string]pendingPermission),
 	}
 }
 
-func (a *App) Startup(ctx context.Context, settings *Settings, permissionManager *PermissionManager) {
+func (a *App) Startup(ctx context.Context, settings *Settings) {
 	a.ctx = ctx
 	a.settings = settings
-	a.permissionManager = permissionManager
+	//a.permissionManager = permissionManager
 	_, err := loadOrCreateTransferHistory()
 
 	if err != nil {
@@ -48,33 +58,49 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
-	p.OnFileReceived(func(name string) {
-		log.Printf("File received: in Bind Session %s", name)
+	p.OnFileReceived(func(peerId string, fileId string, fileName string) {
+		log.Printf("File received: in Bind Session %s", fileName)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
-				"name": name,
+				"name": fileName,
 				"peer": p.GetPeerInfo().UserName,
 			})
 		}
 	})
 
 	p.OnDisconnected(func(peer discovery.Peer) {
-		log.Printf("peer disconnected %v %v\n", peer.Name, peer.UserName)
+		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
 			a.transferRegistry.PauseAllByPeerId(peer.ID)
 			log.Printf("Emitting Events\n")
+			a.discovery.RemovePeerById(peer.ID)
+
+			transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peer.ID)
+
+			for _, t := range transferRegistry {
+				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
+
+					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED")
+					if err != nil {
+						log.Printf("Error adding file history: %v", err)
+					}
+
+				}
+			}
+
 			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{
 				"user_name": peer.UserName,
 				"id":        peer.ID,
 				"port":      peer.Port,
 			})
-		}
-		a.discovery.RemovePeerById(peer.ID)
-	})
 
-	p.OnFileOffer(func(peerId string, fileId string, status transfer.Status, bytesDone int64) {
-		log.Printf("File offer: in Bind Session %s by %v\n", fileId, peerId)
-		a.transferRegistry.AddFileReceiving(peerId, fileId, status, bytesDone)
+			err := p.Stop()
+			if err != nil {
+				log.Printf("Error stopping peer: %v", err)
+				return
+			}
+		}
+
 	})
 }
 
@@ -92,7 +118,7 @@ func (a *App) ListPeers() []discovery.PeerDTO {
 	for _, p := range peers {
 		result = append(result, discovery.ToPeerDTO(*p))
 	}
-
+	log.Info("Here Peer in List Peer ", result)
 	return result
 }
 
@@ -111,8 +137,8 @@ func (a *App) OnPeerRemoved(peer discovery.Peer) {
 	}
 }
 
-func (a *App) SendFileToPeer(peerId string, fileName string) error {
-	log.Printf("Enter App SendFileToPeer %v FilePath %v\n", peerId, fileName)
+func (a *App) SendFileToPeer(peerId string, filePath string) error {
+	log.Printf("Enter App SendFileToPeer %v FilePath %v\n", peerId, filePath)
 
 	selectedPeerSession, ok := peerSessions[peerId]
 	if !ok {
@@ -126,7 +152,7 @@ func (a *App) SendFileToPeer(peerId string, fileName string) error {
 		log.Printf("Peer %v is selected by peer %v\n", peerId, peerInfo.Name)
 
 		dialer := &transport.Dialer{}
-		conn, err := dialer.Dial(*peerInfo, a.ctx, fileName)
+		conn, err := dialer.Dial(*peerInfo, a.ctx, filePath)
 
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
@@ -137,17 +163,34 @@ func (a *App) SendFileToPeer(peerId string, fileName string) error {
 		a.RegisterSession(selectedPeerSession)
 	}
 
-	err := selectedPeerSession.SendLargeFile(a.ctx, fileName, 1024*1024)
+	fileName := filepath.Base(filePath)
+	fileId := fmt.Sprintf("%v-%v", fileName, time.Now().UnixNano())
+
+	a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
+
+	err := selectedPeerSession.SendLargeFile(a.ctx, filePath, 1024*1024, fileId)
+
 	if err != nil {
 		_ = selectedPeerSession.Stop()
 		delete(peerSessions, peerId)
-		log.Printf("Error while creating connection during dialing in send Large File %v\n", err)
+
+		//runtime.EventsEmit(a.ctx, "peer-disconnected", selectedPeerSession.)
+		log.Printf("Peer disconnected %v\n During sending", peerId)
+		a.discovery.RemovePeerById(peerId)
+
+		err := addNewTransferFileHistory(selectedPeerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "FAILED")
+
+		if err != nil {
+			log.Printf("Error adding file history: %v", err)
+		}
+
 		return fmt.Errorf("Error while creating connection during dialing %v\n", err)
 	}
 
+	a.transferRegistry.RemoveFileUponSendingCompletion(peerId, fileId)
 	log.Printf("Sending file to peer %v\n", peerId)
 
-	err = addNewTransferFileHistory(selectedPeerSession.GetPeerInfo().UserName, filepath.Base(fileName), "SENT", "COMPLETED")
+	err = addNewTransferFileHistory(selectedPeerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "COMPLETED")
 
 	if err != nil {
 		log.Printf("Error adding file to peer %v\n", peerId)
@@ -239,8 +282,30 @@ func (a *App) GetTransferHistories() []transferHistory {
 	return sentHistories
 }
 
-func (a *App) HandshakePermission(peerId string, allowed bool) {
-	a.permissionManager.Resolve(peerId, allowed)
+func (a *App) ReceiveFilePermission(peerId string, fileName string, fileId string, allow bool) {
+	log.Printf("Receive File Permission %v %v %v %v\n", peerId, fileName, fileId, allow)
+
+	permissionResponse := protocol.Message{
+		Type:    "file-permission",
+		Name:    fileName,
+		Id:      fileId,
+		Allowed: allow,
+	}
+
+	a.mu.Lock()
+	p, ok := a.pendingPermissions[fileId]
+	delete(a.pendingPermissions, fileId)
+	a.mu.Unlock()
+
+	if !ok {
+		return
+	}
+	err := p.session.Send(permissionResponse)
+	log.Printf("Sending permission response %v\n", permissionResponse)
+	if err != nil {
+		log.Printf("Error sending permission response: %v\n", err)
+		return
+	}
 }
 
 func (a *App) ClearTransferHistory() {
@@ -259,4 +324,6 @@ func (a *App) DisconnectPeer(peerId string) {
 	}
 	_ = peerSession.Stop()
 	delete(peerSessions, peerId)
+	log.Info("Peer disconnected %v", peerId)
+	log.Printf("Peer List %v\n", a.ListPeers())
 }

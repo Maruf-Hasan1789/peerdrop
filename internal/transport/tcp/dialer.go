@@ -2,19 +2,11 @@ package transport
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"log"
 	"net"
-	"os"
-	"path/filepath"
-	"strconv"
-	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 )
 
 type Dialer struct{}
@@ -36,7 +28,8 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, actualFileP
 		peer: peer,
 		role: outbound,
 	}
-	fileInfo, err := os.Stat(actualFilePath)
+
+	/*fileInfo, err := os.Stat(actualFilePath)
 	if err != nil {
 		log.Printf("Error getting file stats %v\n", err)
 		return nil, err
@@ -64,9 +57,9 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, actualFileP
 		return nil, err
 	}
 
-	checkSum := hash.Sum(nil)
+	/*checkSum := hash.Sum(nil)
 
-	handshakeOptions := protocol.HandshakeOptions{
+	/*handshakeOptions := protocol.HandshakeOptions{
 		SendOptions: protocol.SendOptions{
 			Files: []domain.FileMetadata{
 				{
@@ -78,8 +71,8 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, actualFileP
 			},
 		},
 	}
-
-	if err := handshake(ctx, tcpConnection, &peer, &handshakeOptions); err != nil {
+	*/
+	if err := handshake(ctx, tcpConnection, &peer); err != nil {
 		return nil, err
 	}
 

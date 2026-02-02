@@ -22,10 +22,6 @@ export function HandleConnection(arg1) {
   return window['go']['app']['App']['HandleConnection'](arg1);
 }
 
-export function HandshakePermission(arg1, arg2) {
-  return window['go']['app']['App']['HandshakePermission'](arg1, arg2);
-}
-
 export function ListPeers() {
   return window['go']['app']['App']['ListPeers']();
 }
@@ -50,6 +46,10 @@ export function PickFile() {
   return window['go']['app']['App']['PickFile']();
 }
 
+export function ReceiveFilePermission(arg1, arg2, arg3, arg4) {
+  return window['go']['app']['App']['ReceiveFilePermission'](arg1, arg2, arg3, arg4);
+}
+
 export function RegisterSession(arg1) {
   return window['go']['app']['App']['RegisterSession'](arg1);
 }
@@ -62,6 +62,6 @@ export function SendFileToPeer(arg1, arg2) {
   return window['go']['app']['App']['SendFileToPeer'](arg1, arg2);
 }
 
-export function Startup(arg1, arg2, arg3) {
-  return window['go']['app']['App']['Startup'](arg1, arg2, arg3);
+export function Startup(arg1, arg2) {
+  return window['go']['app']['App']['Startup'](arg1, arg2);
 }

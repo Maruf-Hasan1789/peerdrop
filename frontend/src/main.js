@@ -5,7 +5,7 @@ import {
     ClearTransferHistory, DisconnectPeer,
     GetSettings,
     GetTransferHistories,
-    HandshakePermission,
+    ReceiveFilePermission,
     ListPeers,
     PickDownloadFolder,
     PickFile,
@@ -51,10 +51,14 @@ const clearFileBtn = document.getElementById("clear-file");
 const activePeerCount = document.getElementById("active-peer-count");
 
 
-const receivingTransfers = new Map();
+
+
+
 // Keep track of ongoing transfers
 const ongoingTransfers = new Map();
+// transferId -> { peerId, card, paused }
 const failedTransfers = new Set();
+
 
 
 const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
@@ -137,11 +141,11 @@ function updatePeerListUI() {
 }
 
 async function loadTransferHistory() {
-    console.log("Loading Transfer History")
+    //console.log("Loading Transfer History")
     TransferHistoryList.innerHTML = "";
 
     const transferHistories = await GetTransferHistories();
-    console.log("Sent File Histories", transferHistories);
+    //console.log("Sent File Histories", transferHistories);
     transferHistories.forEach(transferredFile => {
         const li = document.createElement("li");
         li.classList.add("history-item");
@@ -190,14 +194,30 @@ EventsOn("peer-connected", (peer) => {
     console.log("Peer Added from frontend")
     peersMap.set(peer.id, peer);
     updatePeerListUI();
+    console.log("Peer " + peer)
     console.log(`[CONNECTED] ${peer.user_name} (${peer.id}) : ${peer.port}`);
 });
 
-EventsOn("peer-disconnected", (peer) => {
-    peersMap.delete(peer.id);
-    fetchPeers().then(r => console.log("fetching peers after disconnection"))
+EventsOn("peer-disconnected", async (peer) => {
     console.log(`[DISCONNECTED] ${peer.user_name} (${peer.id})`);
+
+    // Cancel all transfers belonging to this peer
+    for (const [transferId, transfer] of ongoingTransfers) {
+        if (transfer.peerId === peer.id) {
+            cancelTransfer(transferId, "peer-disconnected");
+        }
+    }
+
+    peersMap.delete(peer.id);
+    clearReceiverSelection();
+
+    await sleep(1000);
+    await fetchPeers();
 });
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 
 EventsOn("randomEvent", (data) => {
@@ -232,7 +252,8 @@ sendFileButton.addEventListener("click", async (event) => {
         SendFileToPeer(receiverId, filePath).then(() => {
             console.log("File sent successfully");
         }).catch(err => {
-            console.error("Error while sending the file");
+            showConnectionError("Connection lost! File transfer failed.");
+            console.error("Error while sending the file", err);
         });
         resetFileSelection();
         //console.log("File sent:", filePath);
@@ -317,8 +338,9 @@ function hasSettingsChanged() {
     return Object.keys(currentSettings).some(key => currentSettings[key] !== originalSettings[key]);
 }
 
-clearSelection.addEventListener(("click"), () => {
+clearSelection.addEventListener(("click"), clearReceiverSelection);
 
+function clearReceiverSelection() {
     if(receiverSelect.value.length > 0) {
         DisconnectPeer(receiverSelect.value).then(r =>{
             console.log("Receiver Select is disconnected");
@@ -334,7 +356,7 @@ clearSelection.addEventListener(("click"), () => {
 
     document.querySelectorAll("#peer-list li")
         .forEach(el => el.classList.remove("selected"));
-});
+}
 
 
 settingsButton.addEventListener("click", () => {
@@ -385,10 +407,14 @@ cancelSettingsBtn.addEventListener("click", () => {
 });
 
 // --- Function to create a new transfer card ---
-function createTransferCard(id, fileName) {
+// ================================
+// Create Transfer Card
+// ================================
+function createTransferCard(id, peerId, fileName, transferId) {
     const card = document.createElement("div");
     card.classList.add("transfer-card");
-    card.dataset.id = id;
+    card.dataset.transferId = transferId;
+    card.dataset.peerId = peerId;
 
     card.innerHTML = `
         <div class="transfer-info">
@@ -401,96 +427,131 @@ function createTransferCard(id, fileName) {
         <div class="transfer-actions">
             <button class="action-btn pause">⏸</button>
             <button class="action-btn resume" style="display:none;">▶️</button>
-            <button class="action-btn cancel" style="display:none;">❌</button>
+            <button class="action-btn cancel">❌</button>
         </div>
     `;
 
-    let started = true;
-    ongoingTransfers.set(id, {card, started});
-    // Add card to DOM
     transferListEl.appendChild(card);
+
+    const transfer = {
+        peerId,
+        transferId,
+        card,
+        paused: false,
+        state: "active"
+    };
+
+    ongoingTransfers.set(transferId, transfer);
     updateTransferCount();
 
-    // Button events
     const pauseBtn = card.querySelector(".pause");
     const resumeBtn = card.querySelector(".resume");
     const cancelBtn = card.querySelector(".cancel");
 
-    let paused = false;
-
     pauseBtn.addEventListener("click", () => {
-        paused = true;
+        if (transfer.state !== "active") return;
+
+        transfer.paused = true;
         pauseBtn.style.display = "none";
         resumeBtn.style.display = "inline-flex";
-        // Optionally, tell backend to pause
+        // backend pause here
     });
 
     resumeBtn.addEventListener("click", () => {
-        paused = false;
+        if (transfer.state !== "active") return;
+
+        transfer.paused = false;
         pauseBtn.style.display = "inline-flex";
         resumeBtn.style.display = "none";
-        // Optionally, tell backend to resume
+        // backend resume here
     });
 
     cancelBtn.addEventListener("click", () => {
-        card.remove();
-        ongoingTransfers.delete(id);
-        updateTransferCount();
-        // Optionally, tell backend to cancel
+        cancelTransfer(transferId, "user-cancelled");
     });
-
-    // Save reference
-    ongoingTransfers.set(id, {card, paused});
 }
 
-// --- Function to update progress ---
-function updateProgress(id, progress) {
-    const transfer = ongoingTransfers.get(id);
+
+// ================================
+// Cancel / Fail Transfer (central)
+// ================================
+function cancelTransfer(transferId, reason = "unknown") {
+    const transfer = ongoingTransfers.get(transferId);
     if (!transfer) return;
+
+    transfer.state = "failed";
+
+    console.log(`[TRANSFER ENDED] ${transferId} (${reason})`);
+
+    transfer.card.remove();
+    ongoingTransfers.delete(transferId);
+    failedTransfers.add(transferId);
+
+    updateTransferCount();
+    // backend cancel if needed
+}
+
+
+// ================================
+// Update Transfer Progress
+// ================================
+function updateProgress(transferId, progress) {
+    const transfer = ongoingTransfers.get(transferId);
+    if (!transfer || transfer.state !== "active") return;
 
     const progressBar = transfer.card.querySelector(".progress-bar");
     const statusLabel = transfer.card.querySelector(".status-label");
 
     progressBar.style.width = `${progress}%`;
-    statusLabel.textContent = progress === 100 ? "Completed" : `Sending… ${Math.floor(progress)}%`;
+    statusLabel.textContent =
+        progress === 100
+            ? "Completed"
+            : `Sending… ${Math.floor(progress)}%`;
 
     if (progress === 100) {
         setTimeout(() => {
-            transfer.card.remove();
-            ongoingTransfers.delete(id);
-            updateTransferCount();
+            cancelTransfer(transferId, "completed");
         }, 1000);
     }
 }
 
-// --- Update transfer count ---
+
+// ================================
+// Transfer Count
+// ================================
 function updateTransferCount() {
-    console.log("Update Transfer Count", ongoingTransfers.size)
+    console.log("Active transfers:", ongoingTransfers.size);
     sendFileCountEl.textContent = ongoingTransfers.size.toString();
 }
+
+
 
 // --- Event Listeners from backend ---
 EventsOn("transfer-start", (payload) => {
     console.log(payload);
-    createTransferCard(payload.id, payload.fileName);
+    createTransferCard(payload.id, payload.peerId , payload.fileName, payload.transferId);
 });
 
 
 EventsOn("transfer-progress", (payload) => {
     //console.log(payload);
     let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
-    updateProgress(payload.id, progress);
+    updateProgress(payload.transferId, progress);
 });
 
 EventsOn("transfer-complete", (payload) => {
     console.log(payload);
-    updateProgress(payload.id, 100);
+    updateProgress(payload.transferId, 100);
 });
 
 
 EventsOn("transfer-failed", (payload) => {
     console.log(payload);
-    failedTransfers.add(payload.id);
+    cancelTransfer(payload.transferId, payload.reason ?? "backend-failed");
+    showToast(
+        "File transfer failed",
+        `Receiver disconnected while sending "${payload.file}"`
+    );
 });
 
 EventsOn("permission-request", (senderInfo) => {
@@ -509,19 +570,19 @@ function showPermissionPopup(sender) {
     fileList.innerHTML = "";
     sender.files.forEach(file => {
         const li = document.createElement("li");
-        li.textContent = `File Name: ${file.file_name} Size: ${decimalNumberFormatter.format((file.file_size)/1024)} MB`;
+        li.textContent = `File Name: ${file.file_name} Size: ${decimalNumberFormatter.format((file.file_size)/(1024 * 1024))} MB`;
         fileList.appendChild(li);
     });
 
     modal.style.display = "flex";
 
     document.getElementById("allow-btn").onclick = () => {
-        HandshakePermission(sender.id, true).then(r => console.log("Permission granted"));
+        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, true).then(r => console.log("Permission granted"));
         modal.style.display = "none";
     };
 
     document.getElementById("deny-btn").onclick = () => {
-        HandshakePermission(sender.id, false).then(r => console.log("Permission denied"));
+        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, false).then(r => console.log("Permission denied"));
         modal.style.display = "none";
     };
 }
@@ -559,45 +620,61 @@ closeErrorBtn.addEventListener('click', () => {
 
 
 // --- State ---
-const receiveTimeouts = new Map();
-
+const receivingTransfers = new Map();
 
 // --- Events from backend ---
+
 EventsOn("receiving-started", (payload) => {
-    // payload: { id, file, totalChunks, totalReceived }
-    // We use payload.file (fileName) as the unique key because ID is unstable
-    createReceiveCard(payload.file, payload.file);
+    // payload: { id, fileName, totalChunks, totalReceived }
+    const key = payload.id;
+    createReceiveCard(key, payload.file);
 });
 
 EventsOn("receiving-progress", (payload) => {
-    // payload: { id, file, totalChunks, totalReceived }
-    const fileKey = payload.file;
+    // payload: { id, fileName, totalChunks, totalReceived }
+    const key = payload.id;
+
     const received = Number(payload.totalReceived) || 0;
     const total = Number(payload.totalChunks) || 1;
-
     const progress = (received / total) * 100;
-    updateReceiveProgress(fileKey, progress);
+
+    updateReceiveProgress(key, progress);
 });
 
 EventsOn("file-received", (payload) => {
-    // payload: { id, file }
-    const fileKey = payload.file;
-    if (receivingTransfers.has(fileKey)) {
-        updateReceiveProgress(fileKey, 100);
+    // payload: { id, fileName }
+    const key = payload.fileName;
+
+    if (receivingTransfers.has(key)) {
+        updateReceiveProgress(key, 100);
+
+        // Optional: auto-remove after completion
+        setTimeout(() => {
+            removeReceiveCard(key);
+        }, 1000);
     }
 });
 
-// --- UI creators ---
+EventsOn("receiving-failed", (payload) => {
+    // payload: { peerId, fileId, fileName }
+    console.log("Receiving Failed", payload);
+
+    const key = payload.fileId;
+    removeReceiveCard(key);
+
+    showToast(
+        `File transfer failed`,
+        `Sender disconnected while receiving "${payload.fileName}"`
+    );
+});
+
+// --- UI creators & helpers ---
+
 function createReceiveCard(key, fileName) {
     if (receivingTransfers.has(key)) return;
 
-    // 1. Set placeholder state
-    receivingTransfers.set(key, {loading: true, lastProgress: 0});
-
-    // 2. Build the DOM element
     const card = document.createElement("div");
     card.classList.add("transfer-card");
-    // We can still store the key in dataset if needed
     card.dataset.key = key;
 
     card.innerHTML = `
@@ -610,86 +687,39 @@ function createReceiveCard(key, fileName) {
         </div>
     `;
 
-    // 3. Append to the correct list
-    if (receiveListEl) {
-        receiveListEl.appendChild(card);
-    }
+    if (receiveListEl) receiveListEl.appendChild(card);
 
-    // 4. Cache the references for performance
-    const transferData = {
-        loading: false,
+    receivingTransfers.set(key, {
         el: card,
         bar: card.querySelector(".progress-bar"),
         label: card.querySelector(".status-label"),
         lastProgress: 0
-    };
-
-    // 5. Check if a progress event arrived while we were building the card
-    const pending = receivingTransfers.get(key);
-    const initialProgress = (pending && pending.loading) ? pending.lastProgress : 0;
-
-    receivingTransfers.set(key, transferData);
-
-    // Apply any missed progress immediately
-    if (initialProgress > 0) {
-        updateReceiveProgress(key, initialProgress);
-    }
+    });
 
     updateReceiveCount();
 }
 
-// --- Progress updates ---
 function updateReceiveProgress(key, progress) {
-    const data = receivingTransfers.get(key);
-    if (!data) return;
+    const transfer = receivingTransfers.get(key);
+    if (!transfer) return;
 
-    // If the card is still being created, save progress for later
-    if (data.loading) {
-        data.lastProgress = progress;
-        return;
-    }
-
-    const displayProgress = Math.min(Math.floor(progress), 100);
-
-    // Prevent redundant DOM updates
-    if (displayProgress === data.lastProgress && displayProgress < 100) return;
-    data.lastProgress = displayProgress;
-
-    // Use requestAnimationFrame for a smooth visual update
-    requestAnimationFrame(() => {
-        if (data.bar) {
-            data.bar.style.width = `${displayProgress}%`;
-        }
-
-        if (data.label) {
-            if (displayProgress >= 100) {
-                data.label.textContent = "Received";
-                scheduleCardRemoval(key);
-            } else {
-                data.label.textContent = `Receiving… ${displayProgress}%`;
-            }
-        }
-    });
+    transfer.lastProgress = progress;
+    transfer.bar.style.width = `${progress}%`;
+    transfer.label.textContent =
+        progress >= 100
+            ? "Completed"
+            : `Receiving… ${Math.floor(progress)}%`;
 }
 
-// --- Cleanup ---
-function scheduleCardRemoval(key) {
-    if (receiveTimeouts.has(key)) return;
+function removeReceiveCard(key) {
+    const transfer = receivingTransfers.get(key);
+    if (!transfer) return;
 
-    const timeout = setTimeout(() => {
-        const data = receivingTransfers.get(key);
-        if (data && data.el) {
-            data.el.remove();
-        }
-        receivingTransfers.delete(key);
-        receiveTimeouts.delete(key);
-        updateReceiveCount();
-    }, 1500);
-
-    receiveTimeouts.set(key, timeout);
+    transfer.el.remove();
+    receivingTransfers.delete(key);
+    updateReceiveCount();
 }
 
-// --- Count badge ---
 function updateReceiveCount() {
     if (receiveCountEl) {
         receiveCountEl.textContent = receivingTransfers.size.toString();
@@ -704,3 +734,22 @@ clearHistoryBtn.addEventListener("click", async () => {
         console.log("Error while clearing transfer histories")
     }
 });
+
+function showToast(title, message) {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+
+    toast.innerHTML = `
+        <strong>${title}</strong>
+        <div>${message}</div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add("show"), 10);
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}

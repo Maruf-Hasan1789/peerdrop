@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
@@ -42,29 +43,35 @@ type PeerSession struct {
 	//event listeners
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
-	fileReceivedListeners []func(name string)
-	onFileOffer           func(peerId string, fileId string, status transfer.Status, chunksDone int64)
+	fileReceivedListeners []func(peerId string, fileId string, fileName string)
+	onFileOffer           func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)
 
 	//message handlers map
-	handlers map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
+	handlers               map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)
+	fileSendingPermissions map[string]chan bool
+	mu                     sync.Mutex
+	activeTransfers        map[string]context.CancelFunc
 }
 
 func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession {
 	ctx, cancel := context.WithCancel(ctx)
 	p := &PeerSession{
-		ctx:         ctx,
-		cancel:      cancel,
-		conn:        conn,
-		peer:        conn.PeerInfo(),
-		done:        make(chan struct{}),
-		connectedAt: time.Now(),
-		handlers:    make(map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)),
-		lastSeen:    time.Now(),
+		ctx:                    ctx,
+		cancel:                 cancel,
+		conn:                   conn,
+		peer:                   conn.PeerInfo(),
+		done:                   make(chan struct{}),
+		connectedAt:            time.Now(),
+		handlers:               make(map[string]func(ctx context.Context, msg protocol.Message, downloadPath string)),
+		lastSeen:               time.Now(),
+		fileSendingPermissions: make(map[string]chan bool),
 	}
 
 	p.handlers["file"] = p.handleFile
 	p.handlers["text"] = p.handleText
 	p.handlers["file-chunk"] = p.handleChunk
+	p.handlers["file-offer"] = p.handleFileOffer
+	p.handlers["file-permission"] = p.handleFilePermission
 	return p
 }
 
@@ -91,11 +98,11 @@ func (p *PeerSession) OnError(fn func(err error)) {
 	p.onError = fn
 }
 
-func (p *PeerSession) OnFileReceived(fn func(name string)) {
+func (p *PeerSession) OnFileReceived(fn func(peerId string, fileId string, fileName string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
-func (p *PeerSession) OnFileOffer(fn func(peerId string, fileId string, FileStatus transfer.Status, bytesDone int64)) {
+func (p *PeerSession) OnFileOffer(fn func(peerId string, fileName string, fileId string, FileStatus transfer.Status, chunkReceived int64, totalChunks int64)) {
 	p.onFileOffer = fn
 }
 
@@ -103,14 +110,24 @@ func (p *PeerSession) readLoop(ctx context.Context, downloadPath string) {
 	defer close(p.done)
 
 	for {
-		data, err := p.conn.Receive()
-
-		if err != nil {
-			p.handleDisconnect(err)
+		select {
+		case <-ctx.Done():
 			return
-		}
+		default:
+			data, err := p.conn.Receive()
 
-		p.handleMessage(ctx, data, downloadPath)
+			if err != nil {
+				if ctx.Err() == nil {
+					log.Printf("Peer disconnected during reading %v\n", err)
+					p.handleDisconnect(err)
+					return
+				}
+
+				log.Printf("Peer session stopped due to context cancellation\n")
+			}
+
+			p.handleMessage(ctx, data, downloadPath)
+		}
 	}
 }
 
@@ -153,7 +170,7 @@ func (p *PeerSession) handleFile(ctx context.Context, msg protocol.Message, down
 	log.Printf("File received %v\n", fileName)
 
 	for _, fn := range p.fileReceivedListeners {
-		fn(fileName)
+		fn(p.peer.ID, msg.Id, fileName)
 	}
 }
 
@@ -162,7 +179,7 @@ func (p *PeerSession) SendText(text string) error {
 		Type: "text",
 		Data: []byte(text),
 	}
-	return p.send(msg)
+	return p.Send(msg)
 }
 
 func (p *PeerSession) SendFile(path string) error {
@@ -178,10 +195,10 @@ func (p *PeerSession) SendFile(path string) error {
 		Data: data,
 	}
 
-	return p.send(msg)
+	return p.Send(msg)
 }
 
-func (p *PeerSession) send(msg protocol.Message) error {
+func (p *PeerSession) Send(msg protocol.Message) error {
 	log.Printf("Sending file %v\n", msg.ChunkIndex)
 	payload, err := json.Marshal(msg)
 
@@ -192,13 +209,18 @@ func (p *PeerSession) send(msg protocol.Message) error {
 	return p.conn.Send(payload)
 }
 
-func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize int) error {
+func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize int, fileId string) error {
 	log.Printf("Entering Sending LargeFile %v\n", path)
+
+	transferId := fmt.Sprintf("%v_%v", filepath.Base(path), time.Now().UnixNano())
+	fileName := filepath.Base(path)
+	peerId := p.peer.ID
 
 	f, err := os.Open(path)
 
 	if err != nil {
 		log.Printf("Error opening file %v: %v", path, err)
+		emitTransferFailedEvent(ctx, peerId, fileId, fileName, transferId)
 		return err
 	}
 
@@ -211,18 +233,50 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 	log.Printf("total chunks %v\n", totalChunks)
 
 	buf := make([]byte, chunkSize)
-	fileId := fmt.Sprintf("%v-%v", path, time.Now().Unix())
+
+	log.Printf("File Id %v\n", fileId)
+
+	fileOffer := protocol.Message{
+		Type:        "file-offer",
+		Name:        fileName,
+		Id:          fileId,
+		Data:        nil,
+		TotalChunks: totalChunks,
+		ChunkSize:   chunkSize,
+		Checksum:    "checkSum",
+	}
+
+	permCh := p.waitForPermission(fileId)
+
+	if err := p.Send(fileOffer); err != nil {
+		log.Printf("Error sending file-offer: %v", err)
+		emitTransferFailedEvent(ctx, peerId, fileId, fileName, transferId)
+		return err
+	}
+
+	ctx, _ = context.WithCancel(p.ctx)
+	select {
+	case allowed := <-permCh:
+		if !allowed {
+			emitTransferFailedEvent(ctx, peerId, fileId, fileName, transferId)
+			return fmt.Errorf("permission denied by User")
+		}
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 
 	runtime.EventsEmit(ctx, "transfer-start", map[string]string{
-		"id":       fileId,
-		"fileName": filepath.Base(path),
+		"id":         fileId,
+		"peerId":     peerId,
+		"fileName":   fileName,
+		"transferId": transferId,
 	})
 
 	for i := 0; i < totalChunks; i++ {
 		n, err := f.Read(buf)
 
 		if err != nil && err != io.EOF {
-			emitTransferFailedEvent(ctx, fileId, path)
+			emitTransferFailedEvent(ctx, peerId, fileId, path, transferId)
 			return err
 		}
 		hash := sha256.New()
@@ -232,43 +286,52 @@ func (p *PeerSession) SendLargeFile(ctx context.Context, path string, chunkSize 
 		msg := protocol.Message{
 			Type:        "file-chunk",
 			Name:        filepath.Base(path),
+			Id:          fileId,
 			Data:        buf[:n],
 			ChunkIndex:  i,
 			TotalChunks: totalChunks,
 			Checksum:    fmt.Sprintf("%x", checkSum),
+			Allowed:     true,
 		}
 
-		if err := p.send(msg); err != nil {
-			emitTransferFailedEvent(ctx, fileId, path)
+		if err := p.Send(msg); err != nil {
+			emitTransferFailedEvent(ctx, peerId, fileId, path, transferId)
 			return err
 		}
 
 		runtime.EventsEmit(ctx, "transfer-progress", map[string]string{
 			"id":          fileId,
-			"file":        path,
+			"peerId":      peerId,
+			"file":        fileName,
 			"totalChunks": strconv.Itoa(totalChunks),
 			"chunkIndex":  strconv.Itoa(msg.ChunkIndex),
+			"transferId":  transferId,
 		})
 	}
 
 	runtime.EventsEmit(ctx, "transfer-complete", map[string]string{
-		"id":   fileId,
-		"file": path,
+		"id":         fileId,
+		"peerId":     peerId,
+		"file":       fileName,
+		"transferId": transferId,
 	})
+
 	return nil
 }
 
-func emitTransferFailedEvent(ctx context.Context, fileId string, path string) {
+func emitTransferFailedEvent(ctx context.Context, peerId string, fileId string, fileName string, transferId string) {
 	runtime.EventsEmit(ctx, "transfer-failed", map[string]string{
-		"id":   fileId,
-		"file": path,
+		"id":         fileId,
+		"peerId":     peerId,
+		"file":       fileName,
+		"transferId": transferId,
 	})
 }
 
 func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, downloadPath string) {
 	f, ok := incomingFiles[msg.Name]
 
-	fileId := fmt.Sprintf("%v-%v", msg.Name, time.Now().Unix())
+	fileId := msg.Id
 
 	if !ok {
 		file, err := os.OpenFile(filepath.Join(downloadPath, msg.Name), os.O_CREATE|os.O_RDWR, 0644)
@@ -291,8 +354,6 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 			return
 		}
 
-		p.onFileOffer(p.peer.ID, fileId, transfer.InProgress, 0)
-
 		incomingFiles[msg.Name] = f
 		runtime.EventsEmit(ctx, "receiving-started", map[string]string{
 			"id":            fileId,
@@ -310,7 +371,8 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 	finalHash := hash.Sum(nil)
 	receivedChecksum := fmt.Sprintf("%x", finalHash)
 
-	log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
+	//log.Printf("Received Checksum %v Calculated checkSum %v\n", receivedChecksum, msg.Checksum)
+	//log.Printf("File Id %v\n", fileId)
 
 	if receivedChecksum == msg.Checksum {
 
@@ -376,7 +438,7 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 		f.file.Close()
 
 		for _, fn := range p.fileReceivedListeners {
-			fn(fileName)
+			fn(p.peer.ID, fileId, fileName)
 		}
 
 		log.Printf("Large file received %v\n", fileName)
@@ -384,8 +446,8 @@ func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, dow
 		//time.Sleep(1 * time.Second)
 
 		runtime.EventsEmit(ctx, "file-received", map[string]string{
-			"id":   fileId,
-			"file": fileName,
+			"fileName": fileName,
+			"peer":     p.peer.UserName,
 		})
 
 		delete(incomingFiles, msg.Name)
@@ -400,10 +462,41 @@ func (p *PeerSession) handleDisconnect(err error) {
 	log.Printf("Peer disconnected during reading %v %v\n", p.peer.Name, err)
 
 	if p.onDisconnected != nil {
+		log.Printf("Peer On Disconnected Provided: %v\n", p.peer.Name)
 		p.onDisconnected(p.peer)
 	}
 
 	if p.onError != nil && err != io.EOF {
 		p.onError(err)
 	}
+}
+
+func (p *PeerSession) handleFileOffer(ctx context.Context, msg protocol.Message, path string) {
+	log.Printf("HandleFile Offer %v\n", msg)
+
+	if p.onFileOffer != nil {
+		p.onFileOffer(p.peer.ID, msg.Name, msg.Id, transfer.InProgress, 0, int64(msg.TotalChunks))
+	}
+}
+
+func (p *PeerSession) handleFilePermission(ctx context.Context, msg protocol.Message, path string) {
+	p.mu.Lock()
+	ch := p.fileSendingPermissions[msg.Id]
+	p.mu.Unlock()
+
+	delete(p.fileSendingPermissions, msg.Id)
+
+	if ch == nil {
+		log.Printf("Permission Channel is missing\n")
+	}
+
+	ch <- msg.Allowed
+}
+
+func (p *PeerSession) waitForPermission(fileId string) <-chan bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	ch := make(chan bool)
+	p.fileSendingPermissions[fileId] = ch
+	return ch
 }
