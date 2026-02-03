@@ -328,16 +328,38 @@ func emitTransferFailedEvent(ctx context.Context, peerId string, fileId string, 
 	})
 }
 
+func openFile(originalFileName string) (*os.File, error) {
+	log.Printf("Opening file %v\n", originalFileName)
+	dir := filepath.Dir(originalFileName)
+	ext := filepath.Ext(originalFileName)
+	base := filepath.Base(originalFileName[:len(originalFileName)-len(ext)])
+
+	for i := 0; ; i++ {
+		name := base + ext
+		if i > 0 {
+			name = fmt.Sprintf("%s(%d)%s", base, i, ext)
+		}
+
+		newPath := filepath.Join(dir, name)
+		log.Printf("Opening file %v\n", newPath)
+		file, err := os.OpenFile(newPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+
+		if err == nil {
+			return file, nil
+		}
+	}
+}
+
 func (p *PeerSession) handleChunk(ctx context.Context, msg protocol.Message, downloadPath string) {
 	f, ok := incomingFiles[msg.Name]
 
 	fileId := msg.Id
 
 	if !ok {
-		file, err := os.OpenFile(filepath.Join(downloadPath, msg.Name), os.O_CREATE|os.O_RDWR, 0644)
+		file, err := openFile(filepath.Join(downloadPath, msg.Name))
 
 		if err != nil {
-			log.Printf("Error opening file %v: %v", msg.Name, err)
+			log.Printf("Error opening file %v: %v\n", msg.Name, err)
 			return
 		}
 
