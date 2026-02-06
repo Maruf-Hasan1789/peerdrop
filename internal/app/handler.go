@@ -42,7 +42,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 
 			for _, t := range transferRegistry {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Incoming {
-					log.Printf("Transfer %v has been paused\n", t)
+					log.Printf("transfer %v has been paused\n", t)
 					cleanUpPartialDownload(a.settings.DownloadPath, t.FileName)
 					err := addNewTransferFileHistory(peer.UserName, t.FileName, "RECEIVED", "FAILED")
 					if err != nil {
