@@ -9,7 +9,6 @@ const sendFileCountEl = document.getElementById("send-file-count");
 const closeErrorBtn = document.getElementById('close-error');
 const sendFileButton = document.getElementById("send-btn");
 export const receiverSelect = document.getElementById("receiver-select");
-const pickFile = document.getElementById("pick-file");
 const fileName = document.getElementById("file-name");
 const clearSelection = document.getElementById("clear-selection");
 
@@ -220,13 +219,9 @@ closeErrorBtn.addEventListener('click', () => {
     updateTransferCount();
 });
 
-pickFile.addEventListener("click", async () => {
-    console.log("Picking File")
-    filePath = await PickFile();
-    handleFileSelection(filePath);
-});
 
 function getFileName(path) {
+    console.log("Path : ", path)
     return path.split(/[/\\]/).pop();
 }
 
