@@ -138,7 +138,8 @@ func (a *App) OnPeerRemoved(peer discovery.Peer) {
 	}
 }
 
-func (a *App) SendFileToPeer(peerId string, filePath string) error {
+func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
+	filePath := filePaths[0]
 	log.Printf("Enter App SendFileToPeer %v FilePath %v\n", peerId, filePath)
 
 	selectedPeerSession, ok := peerSessions[peerId]
