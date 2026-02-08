@@ -73,7 +73,7 @@ func getSettingsFilePath() (*string, error) {
 		return nil, fmt.Errorf("Error while creating user Config %v\n", err)
 	}
 
-	settingsFile := filepath.Join(appConfigDir, "settings.json	")
+	settingsFile := filepath.Join(appConfigDir, "settings.json")
 
 	return &settingsFile, nil
 }
