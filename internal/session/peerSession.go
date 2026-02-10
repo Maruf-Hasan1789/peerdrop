@@ -345,7 +345,10 @@ func openFile(originalFileName string) (*os.File, error) {
 		file, err := os.OpenFile(newPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 
 		if err == nil {
+			log.Printf("Opened file %v\n", newPath)
 			return file, nil
+		} else {
+			log.Printf("Here error in opening file %v\n", err)
 		}
 	}
 }

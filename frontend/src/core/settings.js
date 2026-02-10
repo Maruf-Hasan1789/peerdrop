@@ -1,4 +1,4 @@
-import {GetSettings, PickDownloadFolder, ReceiveFilePermission} from "../../wailsjs/go/app/App";
+import {GetSettings, PickDownloadFolder, ReceiveFilePermission, SaveSettings} from "../../wailsjs/go/app/App";
 import {EventsOn} from "../../wailsjs/runtime";
 
 const settingsModal = document.getElementById("settings-modal");

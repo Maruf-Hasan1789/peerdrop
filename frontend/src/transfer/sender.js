@@ -9,7 +9,6 @@ const sendFileCountEl = document.getElementById("send-file-count");
 const closeErrorBtn = document.getElementById('close-error');
 const sendFileButton = document.getElementById("send-btn");
 export const receiverSelect = document.getElementById("receiver-select");
-const fileName = document.getElementById("file-name");
 const clearSelection = document.getElementById("clear-selection");
 
 
@@ -17,7 +16,9 @@ const clearSelection = document.getElementById("clear-selection");
 const fileInfoBar = document.getElementById("file-info-bar");
 const dropZone = document.getElementById("drop-zone");
 const clearFileBtn = document.getElementById("clear-file");
-let filePath = "";
+let filePath = new Set();
+const selectedFileList = document.getElementById("selectedFileListContainer");
+
 
 export const ongoingTransfers = new Map();
 // transferId -> { peerId, card, paused }
@@ -128,16 +129,16 @@ sendFileButton.addEventListener("click", async (event) => {
     try {
         // Open native file dialog via Go
         console.log("filePath", filePath);
-        if (filePath === "" || receiverSelect.value === "") {
+        if (filePath.size === 0 || receiverSelect.value === "") {
             alert("Receiver is not provided");
             //console.error("File Path is not provided")
             return
         }
 
-        console.log("receiver ", receiverSelect.value, "filePath");
+        console.log("receiver ", receiverSelect.value, "filePath ", filePath);
         // Send file to selected peer
         const receiverId = receiverSelect.value;
-        SendFileToPeer(receiverId, filePath).then(() => {
+        SendFileToPeer(receiverId, Array.from(filePath)).then(() => {
             console.log("File sent successfully");
         }).catch(err => {
             showConnectionError("Connection lost! File transfer failed.");
@@ -186,12 +187,13 @@ EventsOn("transfer-failed", (payload) => {
 });
 
 EventsOn("wails:file-drop", (x, y, paths) => {
+    console.log("DROP EVENT FIRED");
     console.log("Dropped files at: ", x, y);
     console.log("File paths: ", paths)
 
     if (paths && paths.length > 0) {
         console.log("File received via Drag & Drop");
-        handleFileSelection(paths[0]);
+        handleFileSelection(paths);
     }
 })
 
@@ -225,15 +227,16 @@ function getFileName(path) {
     return path.split(/[/\\]/).pop();
 }
 
-function handleFileSelection(path) {
-    if (!path || path === "") {
+function handleFileSelection(paths) {
+    if (paths.length === 0) {
         resetFileSelection();
         return;
     }
 
-    filePath = path;
-    fileName.textContent = getFileName(path);
-    // You might want to show file size if available, but for now just name
+    paths.forEach(path => filePath.add(path));
+
+    renderSelectedFiles(filePath);
+    console.log("File Path: ", filePath);
 
     sendFileButton.disabled = false;
 
@@ -244,14 +247,51 @@ function handleFileSelection(path) {
     console.log("File Ready to send", filePath);
 }
 
+function renderSelectedFiles(filePath) {
+
+
+    selectedFileList.innerHTML = "";
+
+    console.log("Here in render selected files");
+    let i = 0;
+    for (const file of filePath) {
+
+        const div = document.createElement("div");
+        div.classList.add("file-item");
+
+        div.innerHTML = `<span class="file-index">${i + 1}.</span>
+                        <span class="file-name">${getFileName(file)}</span>
+                        <div class="file-actions">
+                        <button class="remove-btn"> Remove</button>
+                        </div>`
+
+        div.querySelector(".remove-btn").addEventListener('click', () => {
+            div.remove();
+            filePath.delete(file);
+            updateUploadFileButtons();
+            renderSelectedFiles(filePath)
+        });
+
+        selectedFileList.appendChild(div);
+        i++;
+    }
+}
+
+function updateUploadFileButtons() {
+    if(filePath.size === 0) {
+        sendFileButton.disabled = true;
+    }
+}
+
+
 function resetFileSelection() {
-    filePath = "";
-    fileName.textContent = "No file selected";
+    filePath.clear();
     sendFileButton.disabled = true;
 
     // Toggle UI back
     if (dropZone) dropZone.style.display = 'flex';
     if (fileInfoBar) fileInfoBar.style.display = 'none';
+    console.log("File Path: ", filePath);
 }
 
 if (clearFileBtn) {

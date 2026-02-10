@@ -11,7 +11,7 @@ import (
 
 type Dialer struct{}
 
-func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context, actualFilePath string) (Connection, error) {
+func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection, error) {
 
 	fmt.Printf("dialed peer %v %v\n", peer.Addresses[0], peer.Port)
 
