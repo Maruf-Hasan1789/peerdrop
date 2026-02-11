@@ -34,6 +34,6 @@ export function RegisterSession(arg1:session.PeerSession):Promise<void>;
 
 export function SaveSettings(arg1:app.Settings):Promise<void>;
 
-export function SendFileToPeer(arg1:string,arg2:string):Promise<void>;
+export function SendFileToPeer(arg1:string,arg2:Array<string>):Promise<void>;
 
 export function Startup(arg1:context.Context,arg2:app.Settings):Promise<void>;

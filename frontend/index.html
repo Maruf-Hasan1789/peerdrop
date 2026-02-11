@@ -72,24 +72,24 @@
                 </div>
 
                 <!-- File Info Bar -->
-                <div id="file-info-bar" class="file-info-bar" style="display: none;">
-                    <div class="file-info-content">
-                        <div class="file-icon-wrapper">
-                            <span class="material-symbols-outlined file-icon">description</span>
+                <div id="file-info-bar" class="file-info-bar" style="display: none">
+                    <div class="file-details">
+
+                        <!-- LEFT: Vertical file list -->
+                        <div id="selectedFileListContainer"></div>
+
+                        <!-- RIGHT: Buttons -->
+                        <div class="file-actions">
+                            <button id="clear-file" class="icon-btn-small">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+
+                            <button id="send-btn" class="send-btn" disabled>
+                                <span class="material-symbols-outlined">send</span>
+                                <span>Send All</span>
+                            </button>
                         </div>
-                        <div class="file-details">
-                            <span id="file-name" class="file-name">No file selected</span>
-                            <span id="file-size" class="file-size"></span>
-                        </div>
-                    </div>
-                    <div class="file-actions">
-                        <button type="button" id="clear-file" class="icon-btn-small" aria-label="Clear file">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
-                        <button type="submit" id="send-btn" class="send-btn" disabled>
-                            <span class="material-symbols-outlined">send</span>
-                            <span>Send</span>
-                        </button>
+
                     </div>
                 </div>
             </section>
