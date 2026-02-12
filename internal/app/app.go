@@ -58,12 +58,12 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
-	p.OnFileReceived(func(peerId string, fileId string, fileName string) {
-		log.Printf("File received: in Bind Session %s", fileName)
+	p.OnFileReceived(func(peerId string, rootId string, rootName string) {
+		log.Printf("File received: in Bind Session %s", rootName)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
-				"id":       fileId,
-				"fileName": fileName,
+				"id":       rootId,
+				"fileName": rootName,
 				"peer":     p.GetPeerInfo().UserName,
 			})
 		}
@@ -81,7 +81,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 			for _, t := range transferRegistry {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
 
-					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED", "0")
+					err := addNewTransferFileHistory(peer.UserName, t.RootName, "SENT", "FAILED", t.RootID)
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}

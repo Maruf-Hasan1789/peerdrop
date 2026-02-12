@@ -18,6 +18,7 @@ type transferHistoryList struct {
 
 type transferHistory struct {
 	Peer         string `json:"peer"`
+	TransferID   string `json:"transfer_id"`
 	FileName     string `json:"file_name"`
 	TransferType string `json:"transfer_type"` //SENT or RECEIVED
 	Status       string `json:"status"`        //COMPLETED or FAILED
