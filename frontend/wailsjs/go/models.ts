@@ -91,7 +91,7 @@ export namespace discovery {
 export namespace session {
 	
 	export class PeerSession {
-	
+	    ID: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new PeerSession(source);
@@ -99,7 +99,7 @@ export namespace session {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	
+	        this.ID = source["ID"];
 	    }
 	}
 

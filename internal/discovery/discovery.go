@@ -13,12 +13,13 @@ type Discovery struct {
 	observers []PeerObserver
 }
 type SenderInfo struct {
-	ID        string                `json:"id"`
-	Name      string                `json:"name"`
-	Addresses []string              `json:"addresses"`
-	Port      string                `json:"port"`
-	UserName  string                `json:"user_name"`
-	Files     []domain.FileMetadata `json:"files"`
+	ID         string                `json:"id"`
+	TransferId string                `json:"transfer_id"`
+	Name       string                `json:"name"`
+	Addresses  []string              `json:"addresses"`
+	Port       string                `json:"port"`
+	UserName   string                `json:"user_name"`
+	Files      []domain.FileMetadata `json:"files"`
 }
 
 func New() *Discovery {

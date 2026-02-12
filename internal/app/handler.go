@@ -6,6 +6,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
@@ -24,7 +25,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	peerSession.OnFileReceived(func(peerId string, fileId string, fileName string) {
 		log.Printf("File received in HandleConnection %v\n", fileName)
 		a.transferRegistry.RemoveFileReceivingUponCompletion(peerId, fileId)
-		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, fileName, "RECEIVED", "COMPLETED")
+		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, fileName, "RECEIVED", "COMPLETED", "")
 
 		if err != nil {
 			log.Printf("Error adding file history: %v\n", err)
@@ -44,7 +45,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Incoming {
 					log.Printf("transfer %v has been paused\n", t)
 					cleanUpPartialDownload(a.settings.DownloadPath, t.FileName)
-					err := addNewTransferFileHistory(peer.UserName, t.FileName, "RECEIVED", "FAILED")
+					err := addNewTransferFileHistory(peer.UserName, t.FileName, "RECEIVED", "FAILED", "")
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
@@ -75,24 +76,37 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		log.Printf("Session error %v\n", err)
 	})
 
-	peerSession.OnFileOffer(func(peerId string, fileName string, fileId string, status transfer.Status, chunkReceived int64, totalChunks int64) {
-		log.Printf("Peer session on file offer in handler %v %v %v %v\n", peerId, fileId, status, totalChunks)
-		a.transferRegistry.AddFileReceiving(peerId, fileId, fileName, status, chunkReceived, totalChunks, transfer.Incoming)
+	peerSession.OnFileOffer(func(peerId string, transferId string, incomingFiles []protocol.FileMeta, totalSize int64) {
+		log.Printf("Peer session on file offer in handler %v %v %v\n", peerId, incomingFiles, totalSize)
+
+		a.transferRegistry.AddFileReceiving(peerId, "", "", transfer.Pending, 0, 0, transfer.Incoming)
+
+		var newFiles []domain.FileMetadata
+
+		for _, incomingFile := range incomingFiles {
+			newFile := domain.FileMetadata{
+				ID:       incomingFile.ID,
+				FileName: incomingFile.Path,
+				FileSize: incomingFile.Size,
+				Checksum: incomingFile.CheckSum,
+			}
+
+			newFiles = append(newFiles, newFile)
+		}
+
 		peer := peerSession.GetPeerInfo()
+
 		senderInfo := discovery.SenderInfo{
-			ID:       peerId,
-			Name:     peer.Name,
-			UserName: peer.UserName,
-			Files: []domain.FileMetadata{{
-				ID:       fileId,
-				FileName: fileName,
-				FileSize: totalChunks * ChunkSize,
-			}},
+			ID:         peerId,
+			TransferId: transferId,
+			Name:       peer.Name,
+			UserName:   peer.UserName,
+			Files:      newFiles,
 		}
 
 		a.mu.Lock()
 
-		a.pendingPermissions[fileId] = pendingPermission{
+		a.pendingPermissions[transferId] = pendingPermission{
 			session: peerSession,
 		}
 
@@ -101,7 +115,14 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		if a.settings.IsPermissionRequiredToSendFiles {
 			runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
 		} else {
-			a.ReceiveFilePermission(peerId, fileName, fileId, true)
+			maap := make(map[string]bool)
+
+			for _, file := range newFiles {
+				maap[file.ID] = true
+			}
+
+			//allowing all files
+			a.ReceiveFilePermission(peerId, transferId, maap, true)
 		}
 	})
 
