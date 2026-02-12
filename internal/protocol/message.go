@@ -21,6 +21,13 @@ const (
 	ActionError        ControlAction = "ERROR"
 )
 
+type RootEntryType string
+
+const (
+	EntryTypeFile      RootEntryType = "FILE"
+	EntryTypeDirectory RootEntryType = "DIRECTORY"
+)
+
 type Message struct {
 	Version   int         `json:"version"`
 	Type      MessageType `json:"type"`
@@ -36,11 +43,18 @@ type Message struct {
 }
 
 type Handshake struct {
-	Root          string     `json:"root,omitempty"`
-	Files         []FileMeta `json:"files"`
-	TotalSize     int64      `json:"total_size"`
-	ChunkSize     int64      `json:"chunk_size"`
-	ParallelChunk int        `json:"parallel_chunk"`
+	Roots         []*RootEntry `json:"roots"`
+	TotalSize     int64        `json:"total_size"`
+	ChunkSize     int          `json:"chunk_size"`
+	ParallelChunk int          `json:"parallel_chunk"`
+}
+
+type RootEntry struct {
+	ID    string        `json:"id"`
+	Name  string        `json:"name"`
+	Type  RootEntryType `json:"type"`
+	Files []FileMeta    `json:"files"`
+	Size  int64         `json:"size"`
 }
 
 type FileMeta struct {
@@ -51,6 +65,7 @@ type FileMeta struct {
 }
 
 type Chunk struct {
+	RootId   string `json:"root_id"`
 	FileID   string `json:"file_id"`
 	Index    int    `json:"index"`
 	Total    int    `json:"total"`

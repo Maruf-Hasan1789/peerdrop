@@ -56,7 +56,7 @@ function createTransferCard(id, peerId, fileName, transferId) {
         state: "active"
     };
 
-    ongoingTransfers.set(transferId, transfer);
+    ongoingTransfers.set(id, transfer);
     updateTransferCount();
 
     const pauseBtn = card.querySelector(".pause");
@@ -104,8 +104,8 @@ export function cancelTransfer(transferId, reason = "unknown") {
 }
 
 
-function updateProgress(transferId, progress) {
-    const transfer = ongoingTransfers.get(transferId);
+function updateProgress(id, progress) {
+    const transfer = ongoingTransfers.get(id);
     if (!transfer || transfer.state !== "active") return;
 
     const progressBar = transfer.card.querySelector(".progress-bar");
@@ -119,7 +119,7 @@ function updateProgress(transferId, progress) {
 
     if (progress === 100) {
         setTimeout(() => {
-            cancelTransfer(transferId, "completed");
+            cancelTransfer(id, "completed");
         }, 1000);
     }
 }
@@ -166,14 +166,16 @@ EventsOn("transfer-start", (payload) => {
 
 
 EventsOn("transfer-progress", (payload) => {
-    //console.log(payload);
-    let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
-    updateProgress(payload.transferId, progress);
+    console.log(payload);
+    const totalBytes = Number(payload.totalBytes)
+    const totalReceived = Number(payload.totalReceived)
+    let progress = (totalReceived / totalBytes) * 100
+    updateProgress(payload.id, progress);
 });
 
 EventsOn("transfer-complete", (payload) => {
     console.log(payload);
-    updateProgress(payload.transferId, 100);
+    updateProgress(payload.id, 100);
 });
 
 

@@ -177,7 +177,7 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []s
 	peerId := peerSession.GetPeerInfo().ID
 	//a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
 	startingTime := time.Now()
-	err := peerSession.SendToPeer(a.ctx, transferId, filePaths)
+	err := peerSession.SendToPeer(transferId, filePaths)
 
 	if err != nil {
 		_ = peerSession.Stop()

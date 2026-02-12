@@ -13,18 +13,20 @@ EventsOn("receiving-started", (payload) => {
 });
 
 EventsOn("receiving-progress", (payload) => {
-    // payload: { id, fileName, totalChunks, totalReceived }
     const key = payload.id;
 
-    const received = Number(payload.totalReceived) || 0;
-    const total = Number(payload.totalChunks) || 1;
+    const received = Number(payload.totalReceived);
+    const total = Number(payload.totalBytes);
+    
+    console.log("Received " + received + " Total " + total)
+
     const progress = (received / total) * 100;
 
     updateReceiveProgress(key, progress);
 });
 
 EventsOn("file-received", (payload) => {
-    // payload: { id, fileName }
+    // payload: { id, file }
     const key = payload.id;
 
     if (receivingTransfers.has(key)) {
@@ -41,12 +43,12 @@ EventsOn("receiving-failed", (payload) => {
     // payload: { peerId, fileId, fileName }
     console.log("Receiving Failed", payload);
 
-    const key = payload.fileId;
+    const key = payload.Id;
     removeReceiveCard(key);
 
     showToast(
         `File transfer failed`,
-        `Sender disconnected while receiving "${payload.fileName}"`
+        `Sender disconnected while receiving "${payload.file}"`
     );
 });
 
