@@ -51,9 +51,9 @@ func (a *App) HandleConnection(conn transport.Connection) {
 					}
 
 					runtime.EventsEmit(a.ctx, "receiving-failed", map[string]interface{}{
-						"peerId":   peer.ID,
-						"fileId":   t.FileId,
-						"fileName": t.FileName,
+						"peerId": peer.ID,
+						"Id":     t.FileId,
+						"file":   t.FileName,
 					})
 				}
 			}
@@ -76,19 +76,18 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		log.Printf("Session error %v\n", err)
 	})
 
-	peerSession.OnFileOffer(func(peerId string, transferId string, incomingFiles []protocol.FileMeta, totalSize int64) {
-		log.Printf("Peer session on file offer in handler %v %v %v\n", peerId, incomingFiles, totalSize)
+	peerSession.OnFileOffer(func(peerId string, transferId string, rootEntries []*protocol.RootEntry, totalSize int64) {
+		log.Printf("Peer session on file offer in handler %v %v %v\n", peerId, rootEntries, totalSize)
 
-		a.transferRegistry.AddFileReceiving(peerId, "", "", transfer.Pending, 0, 0, transfer.Incoming)
+		//a.transferRegistry.AddFileReceiving(peerId, "", "", transfer.Pending, 0, 0, transfer.Incoming)
 
 		var newFiles []domain.FileMetadata
 
-		for _, incomingFile := range incomingFiles {
+		for _, rootEntry := range rootEntries {
 			newFile := domain.FileMetadata{
-				ID:       incomingFile.ID,
-				FileName: incomingFile.Path,
-				FileSize: incomingFile.Size,
-				Checksum: incomingFile.CheckSum,
+				ID:       rootEntry.ID,
+				FileName: rootEntry.Name,
+				FileSize: rootEntry.Size,
 			}
 
 			newFiles = append(newFiles, newFile)
