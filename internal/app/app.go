@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
+	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -81,7 +81,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 			for _, t := range transferRegistry {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
 
-					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED")
+					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED", "0")
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
@@ -165,20 +165,19 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 		a.RegisterSession(selectedPeerSession)
 	}
 
-	for _, filePath := range filePaths {
-		go a.transferFileToPeer(selectedPeerSession, filePath)
-	}
-	return nil
+	transferId := uuid.NewString()
+
+	err := a.transferFileToPeer(selectedPeerSession, filePaths, transferId)
+
+	return err
 }
 
-func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePath string) {
-	fileName := filepath.Base(filePath)
-	fileId := fmt.Sprintf("%v-%v", fileName, time.Now().UnixNano())
+func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []string, transferId string) error {
 
 	peerId := peerSession.GetPeerInfo().ID
-	a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
-
-	err := peerSession.SendLargeFile(a.ctx, filePath, 1024*1024, fileId)
+	//a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
+	startingTime := time.Now()
+	err := peerSession.SendToPeer(a.ctx, transferId, filePaths)
 
 	if err != nil {
 		_ = peerSession.Stop()
@@ -187,22 +186,24 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePath stri
 		//runtime.EventsEmit(a.ctx, "peer-disconnected", selectedPeerSession.)
 		log.Printf("Peer disconnected %v\n During sending", peerId)
 		a.discovery.RemovePeerById(peerId)
-
-		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "FAILED")
-
-		if err != nil {
-			log.Printf("Error adding file history: %v", err)
-		}
+		return err
 	}
 
-	a.transferRegistry.RemoveFileUponSendingCompletion(peerId, fileId)
+	log.Printf("Total taken Time %v\n", time.Since(startingTime).Seconds())
+
+	log.Printf("Sent successfully")
+
+	return nil
+	/*a.transferRegistry.RemoveFileUponSendingCompletion(peerId, fileId)
 	log.Printf("Sending file to peer %v\n", peerId)
 
-	err = addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "COMPLETED")
+	err = addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "COMPLETED", transferId)
 
 	if err != nil {
 		log.Printf("Error adding file to peer %v\n", peerId)
 	}
+
+	*/
 }
 
 func (a *App) PickFile() (string, error) {
@@ -288,24 +289,47 @@ func (a *App) GetTransferHistories() []transferHistory {
 	return sentHistories
 }
 
-func (a *App) ReceiveFilePermission(peerId string, fileName string, fileId string, allow bool) {
-	log.Printf("Receive File Permission %v %v %v %v\n", peerId, fileName, fileId, allow)
+func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFilePermissions map[string]bool, isAllowedAll bool) {
+
+	log.Printf("Receive File Permission %v %v %v %v\n", peerId, incomingFilePermissions, isAllowedAll, a.settings.DownloadPath)
+
+	filePermissionControl := &protocol.Control{
+		Action:  protocol.ActionHandshakeAck,
+		Details: fmt.Sprintf("Files permission"),
+	}
+
+	if isAllowedAll {
+		filePermissionControl.AllowAll = true
+	} else {
+		var controls []protocol.FileControl
+
+		for fileId, isAllowed := range incomingFilePermissions {
+			controls = append(controls, protocol.FileControl{
+				FileID:  fileId,
+				Allowed: isAllowed,
+			})
+		}
+
+		filePermissionControl.AllowAll = false
+		filePermissionControl.Files = controls
+	}
 
 	permissionResponse := protocol.Message{
-		Type:    "file-permission",
-		Name:    fileName,
-		Id:      fileId,
-		Allowed: allow,
+		Version: protocol.ProtocolVersion,
+		Type:    protocol.TypeControl,
+		ID:      transferId,
+		Control: filePermissionControl,
 	}
 
 	a.mu.Lock()
-	p, ok := a.pendingPermissions[fileId]
-	delete(a.pendingPermissions, fileId)
+	p, ok := a.pendingPermissions[transferId]
+	delete(a.pendingPermissions, transferId)
 	a.mu.Unlock()
 
 	if !ok {
 		return
 	}
+
 	err := p.session.Send(permissionResponse)
 	log.Printf("Sending permission response %v\n", permissionResponse)
 	if err != nil {

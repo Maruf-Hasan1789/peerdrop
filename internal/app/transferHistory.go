@@ -91,7 +91,8 @@ func getHistoryFilePath() (string, error) {
 	return historyFile, nil
 }
 
-func addNewTransferFileHistory(peer string, fileName string, transferType string, status string) error {
+func addNewTransferFileHistory(peer string, fileName string, transferType string, status string, transferId string) error {
+	fmt.Printf("Transfer ID for future update %v\n", transferId)
 	fileHistories, err := loadOrCreateTransferHistory()
 
 	if err != nil {

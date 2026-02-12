@@ -28,7 +28,7 @@ export function PickDownloadFolder():Promise<string>;
 
 export function PickFile():Promise<string>;
 
-export function ReceiveFilePermission(arg1:string,arg2:string,arg3:string,arg4:boolean):Promise<void>;
+export function ReceiveFilePermission(arg1:string,arg2:string,arg3:Record<string, boolean>,arg4:boolean):Promise<void>;
 
 export function RegisterSession(arg1:session.PeerSession):Promise<void>;
 
