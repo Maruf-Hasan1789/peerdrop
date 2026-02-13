@@ -10,6 +10,7 @@ const (
 
 const (
 	Pending Status = iota
+	Rejected
 	InProgress
 	Paused
 	Completed
