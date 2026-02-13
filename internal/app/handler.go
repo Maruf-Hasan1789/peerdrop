@@ -25,8 +25,8 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	peerSession.OnFileReceived(func(peerId string, rootId string, rootName string) {
 		log.Printf("File received in HandleConnection %v\n", rootName)
 
-		a.transferRegistry.RemoveFileRegistryUponCompletion(peerId, rootId, transfer.Incoming)
-		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, rootName, "RECEIVED", "COMPLETED", "")
+		a.transferRegistry.RemoveFileRegistryUponCompletion(peerId, rootId)
+		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, rootName, "RECEIVED", "COMPLETED", rootId)
 
 		if err != nil {
 			log.Printf("Error adding file history: %v\n", err)
@@ -54,7 +54,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Incoming {
 					log.Printf("transfer %v has been paused\n", t)
 					cleanUpPartialDownload(a.settings.DownloadPath, t.RootName)
-					err := addNewTransferFileHistory(peer.UserName, t.RootName, "RECEIVED", "FAILED", t.TransferId)
+					err := addNewTransferFileHistory(peer.UserName, t.RootName, "RECEIVED", "FAILED", t.RootID)
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
@@ -99,8 +99,10 @@ func (a *App) HandleConnection(conn transport.Connection) {
 
 			a.transferRegistry.AddTransferredFile(peerId, transferId, rootEntry.ID, rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
 			newFiles = append(newFiles, newFile)
-		}
+			registry := a.transferRegistry.GetTransferRegistryByRootId(rootEntry.ID)
 
+			log.Printf("Transfer Registry: %v %v\n", (*registry).RootID, (*registry).Status)
+		}
 		peer := peerSession.GetPeerInfo()
 
 		senderInfo := discovery.SenderInfo{

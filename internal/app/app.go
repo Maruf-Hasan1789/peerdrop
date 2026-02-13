@@ -79,7 +79,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 			transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peer.ID)
 
 			for _, t := range transferRegistry {
-				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
+				if t.PeerId == peer.ID && t.Status == transfer.InProgress && t.Direction == transfer.Outgoing {
 
 					err := addNewTransferFileHistory(peer.UserName, t.RootName, "SENT", "FAILED", t.RootID)
 					if err != nil {
@@ -323,16 +323,31 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFi
 
 	if isAllowedAll {
 		filePermissionControl.AllowAll = true
+		for rootId, _ := range incomingFilePermissions {
+			a.transferRegistry.UpdateTransferRegistryStatusByRootId(rootId, transfer.InProgress)
+		}
+		a.showTransferRegistryStatus(incomingFilePermissions)
 	} else {
 		var controls []protocol.FileControl
 
-		for fileId, isAllowed := range incomingFilePermissions {
+		for rootId, isAllowed := range incomingFilePermissions {
+			var transferStatus transfer.Status
+
+			if isAllowed == true {
+				transferStatus = transfer.InProgress
+			} else {
+				transferStatus = transfer.Rejected
+			}
+
+			a.transferRegistry.UpdateTransferRegistryStatusByRootId(rootId, transferStatus)
+
 			controls = append(controls, protocol.FileControl{
-				FileID:  fileId,
+				FileID:  rootId,
 				Allowed: isAllowed,
 			})
 		}
 
+		a.showTransferRegistryStatus(incomingFilePermissions)
 		filePermissionControl.AllowAll = false
 		filePermissionControl.Files = controls
 	}
@@ -358,6 +373,16 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFi
 	if err != nil {
 		log.Printf("Error sending permission response: %v\n", err)
 		return
+	}
+}
+
+// just logging function
+// to identify if transfer registry is updated properly or not
+// will remove later on
+func (a *App) showTransferRegistryStatus(incomingFilePermissions map[string]bool) {
+	for rootId, isAllowed := range incomingFilePermissions {
+		registry := a.transferRegistry.GetTransferRegistryByRootId(rootId)
+		log.Printf("Transfer Registry Status for %v: %v %v\n", rootId, isAllowed, (*registry).Status)
 	}
 }
 
