@@ -18,6 +18,7 @@ export namespace app {
 	}
 	export class transferHistory {
 	    peer: string;
+	    transfer_id: string;
 	    file_name: string;
 	    transfer_type: string;
 	    status: string;
@@ -30,6 +31,7 @@ export namespace app {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.peer = source["peer"];
+	        this.transfer_id = source["transfer_id"];
 	        this.file_name = source["file_name"];
 	        this.transfer_type = source["transfer_type"];
 	        this.status = source["status"];

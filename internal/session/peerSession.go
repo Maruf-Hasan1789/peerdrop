@@ -51,7 +51,7 @@ type PeerSession struct {
 	//event listeners
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
-	fileReceivedListeners []func(peerId string, fileId string, fileName string)
+	fileReceivedListeners []func(peerId string, rootId string, rootName string)
 	onFileOffer           func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
 
 	//message handlers map
@@ -122,7 +122,7 @@ func (p *PeerSession) OnError(fn func(err error)) {
 	p.onError = fn
 }
 
-func (p *PeerSession) OnFileReceived(fn func(peerId string, fileId string, fileName string)) {
+func (p *PeerSession) OnFileReceived(fn func(peerId string, rootId string, rootName string)) {
 	p.fileReceivedListeners = append(p.fileReceivedListeners, fn)
 }
 
@@ -415,7 +415,7 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 			"transferId": transferId + rootId,
 		})
 	}
-	
+
 	return nil
 }
 
@@ -456,8 +456,6 @@ func openFile(originalFileName string) (*os.File, error) {
 func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 	incomingFileId := getIncomingFileId(msg.ID, msg.Chunk.RootId, msg.Chunk.FileID)
 	f, ok := incomingFiles[incomingFileId]
-
-	fileId := msg.Chunk.FileID
 
 	if !ok {
 		log.Printf("File was not mentioned in handshake\n")
@@ -590,18 +588,14 @@ func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 
 		_ = f.file.Close()
 
-		for _, fn := range p.fileReceivedListeners {
-			fn(p.peer.ID, fileId, fileName)
+		log.Printf("Large file received %v\n", fileName)
+
+		if rProgress.TotalBytes == rProgress.TransferredBytes {
+			for _, fn := range p.fileReceivedListeners {
+				fn(p.peer.ID, rProgress.RootID, p.rootEntries[rProgress.RootID].Name)
+			}
 		}
 
-		log.Printf("Large file received %v\n", fileName)
-		if rProgress.TotalBytes == rProgress.TransferredBytes {
-			runtime.EventsEmit(p.ctx, "file-received", map[string]string{
-				"id":   rProgress.RootID,
-				"file": p.rootEntries[rProgress.RootID].Name,
-				"peer": p.peer.UserName,
-			})
-		}
 		delete(incomingFiles, incomingFileId)
 	}
 }

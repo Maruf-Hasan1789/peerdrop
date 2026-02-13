@@ -42,8 +42,12 @@ export function PickDownloadFolder() {
   return window['go']['app']['App']['PickDownloadFolder']();
 }
 
-export function PickFile() {
-  return window['go']['app']['App']['PickFile']();
+export function PickFiles() {
+  return window['go']['app']['App']['PickFiles']();
+}
+
+export function PickFolder() {
+  return window['go']['app']['App']['PickFolder']();
 }
 
 export function ReceiveFilePermission(arg1, arg2, arg3, arg4) {

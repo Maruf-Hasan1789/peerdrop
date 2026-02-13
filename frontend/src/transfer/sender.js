@@ -1,5 +1,5 @@
 import {EventsOn} from "../../wailsjs/runtime";
-import {DisconnectPeer, PickFile, SendFileToPeer} from "../../wailsjs/go/app/App";
+import {DisconnectPeer, PickFiles, PickFolder, SendFileToPeer} from "../../wailsjs/go/app/App";
 import {showToast} from "../utils/utils";
 
 const connectionErrorMsg = document.getElementById('connection-error-msg');
@@ -18,6 +18,13 @@ const dropZone = document.getElementById("drop-zone");
 const clearFileBtn = document.getElementById("clear-file");
 let filePath = new Set();
 const selectedFileList = document.getElementById("selectedFileListContainer");
+
+
+const pickFile = document.getElementById("pick-file");
+const pickFolder = document.getElementById("pick-folder");
+
+const toggle = document.getElementById('browse-dropdown-toggle');
+const menu = document.getElementById('browse-dropdown-menu');
 
 
 export const ongoingTransfers = new Map();
@@ -322,3 +329,28 @@ export function clearReceiverSelection() {
         .forEach(el => el.classList.remove("selected"));
 }
 
+
+pickFile.addEventListener("click", async () => {
+    console.log("Picking File")
+    const pickedFiles = await PickFiles();
+    console.log("Picked Files ", pickedFiles);
+    handleFileSelection(pickedFiles);
+});
+
+pickFolder.addEventListener("click", async ()=> {
+   console.log("Picking Folder");
+   const pickedFolder = await PickFolder();
+   console.log("Picked Folder ", pickedFolder)
+    handleFileSelection(pickedFolder);
+});
+
+
+toggle.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent document click from immediately hiding
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+});
+
+// Hide dropdown if clicking outside
+document.addEventListener('click', () => {
+    menu.style.display = 'none';
+});

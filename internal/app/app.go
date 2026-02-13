@@ -58,12 +58,12 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
-	p.OnFileReceived(func(peerId string, fileId string, fileName string) {
-		log.Printf("File received: in Bind Session %s", fileName)
+	p.OnFileReceived(func(peerId string, rootId string, rootName string) {
+		log.Printf("File received: in Bind Session %s", rootName)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
-				"id":       fileId,
-				"fileName": fileName,
+				"id":       rootId,
+				"fileName": rootName,
 				"peer":     p.GetPeerInfo().UserName,
 			})
 		}
@@ -81,7 +81,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 			for _, t := range transferRegistry {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Outgoing {
 
-					err := addNewTransferFileHistory(peer.UserName, t.FileName, "SENT", "FAILED", "0")
+					err := addNewTransferFileHistory(peer.UserName, t.RootName, "SENT", "FAILED", t.RootID)
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
@@ -206,17 +206,40 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []s
 	*/
 }
 
-func (a *App) PickFile() (string, error) {
-	paths, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select a file to send",
+func (a *App) PickFiles() ([]string, error) {
+	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select files to send",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "File", Pattern: "*.*"},
+		},
 	})
+
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
 	if len(paths) == 0 {
-		return "", fmt.Errorf("no file selected")
+		return nil, fmt.Errorf("no file selected")
 	}
+
 	return paths, nil
+}
+
+func (a *App) PickFolder() ([]string, error) {
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select a folders to send",
+	})
+
+	if err != nil {
+		log.Printf("Error opening folders: %v\n", err)
+		return nil, err
+	}
+
+	if len(path) == 0 {
+		return nil, fmt.Errorf("no folders selected")
+	}
+
+	return []string{path}, nil
 }
 
 func (a *App) GetSettings() (*Settings, error) {
