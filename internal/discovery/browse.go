@@ -10,8 +10,17 @@ import (
 
 func (d *Discovery) Browse(ctx context.Context, selfPeer Peer) error {
 	time.Sleep(10 * time.Second)
+
 	log.Printf("Started browsing")
-	resolver, _ := zeroconf.NewResolver(nil)
+
+	ifaces, err := getSecureLANInterfaces()
+
+	if err != nil {
+		log.Printf("Error getting secure LAN interfaces: %v", err)
+		return err
+	}
+
+	resolver, _ := zeroconf.NewResolver(zeroconf.SelectIfaces(ifaces))
 
 	entries := make(chan *zeroconf.ServiceEntry)
 
