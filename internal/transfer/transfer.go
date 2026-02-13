@@ -17,11 +17,12 @@ const (
 )
 
 type Transfer struct {
-	PeerId        string
-	FileId        string
-	FileName      string
-	Status        Status
-	ChunkReceived int64
-	TotalChunks   int64
-	Direction     Direction
+	PeerId           string
+	TransferId       string
+	RootID           string
+	RootName         string
+	Status           Status
+	TransferredBytes int64
+	TotalBytes       int64
+	Direction        Direction
 }

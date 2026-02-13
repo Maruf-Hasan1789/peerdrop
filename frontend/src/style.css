@@ -1827,3 +1827,27 @@ input:focus + .slider {
     opacity: 1;
     transform: translateY(0);
 }
+
+.browse-wrapper {
+    position: relative; /* Dropdown will be positioned relative to this */
+    display: inline-block;
+}
+
+#browse-dropdown-menu {
+    position: absolute;
+    top: 50%; /* start roughly centered vertically */
+    left: 100%;          /* start at the right edge of the button */
+    transform: translateY(-50%); /* move vertically to center */
+    display: none; /* hidden by default */
+    flex-direction: column;
+    gap: 0.5rem;
+    background: rgba(22, 27, 38, 0.95);
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+#browse-dropdown-menu .browse-btn {
+    width: 140px; /* optional: fixed width for buttons */
+}

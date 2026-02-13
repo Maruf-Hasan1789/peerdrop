@@ -22,13 +22,22 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	defer conn.Close()
 	peerSession := session.NewPeerSession(a.ctx, conn)
 
-	peerSession.OnFileReceived(func(peerId string, fileId string, fileName string) {
-		log.Printf("File received in HandleConnection %v\n", fileName)
-		a.transferRegistry.RemoveFileReceivingUponCompletion(peerId, fileId)
-		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, fileName, "RECEIVED", "COMPLETED", "")
+	peerSession.OnFileReceived(func(peerId string, rootId string, rootName string) {
+		log.Printf("File received in HandleConnection %v\n", rootName)
+
+		a.transferRegistry.RemoveFileRegistryUponCompletion(peerId, rootId, transfer.Incoming)
+		err := addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, rootName, "RECEIVED", "COMPLETED", "")
 
 		if err != nil {
 			log.Printf("Error adding file history: %v\n", err)
+		}
+
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "file-received", map[string]interface{}{
+				"id":   rootId,
+				"file": rootName,
+				"peer": peerSession.GetPeerInfo().UserName,
+			})
 		}
 	})
 
@@ -44,16 +53,16 @@ func (a *App) HandleConnection(conn transport.Connection) {
 			for _, t := range transferRegistry {
 				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Incoming {
 					log.Printf("transfer %v has been paused\n", t)
-					cleanUpPartialDownload(a.settings.DownloadPath, t.FileName)
-					err := addNewTransferFileHistory(peer.UserName, t.FileName, "RECEIVED", "FAILED", "")
+					cleanUpPartialDownload(a.settings.DownloadPath, t.RootName)
+					err := addNewTransferFileHistory(peer.UserName, t.RootName, "RECEIVED", "FAILED", t.TransferId)
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
 
 					runtime.EventsEmit(a.ctx, "receiving-failed", map[string]interface{}{
 						"peerId": peer.ID,
-						"Id":     t.FileId,
-						"file":   t.FileName,
+						"Id":     t.RootID,
+						"file":   t.RootName,
 					})
 				}
 			}
@@ -79,8 +88,6 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	peerSession.OnFileOffer(func(peerId string, transferId string, rootEntries []*protocol.RootEntry, totalSize int64) {
 		log.Printf("Peer session on file offer in handler %v %v %v\n", peerId, rootEntries, totalSize)
 
-		//a.transferRegistry.AddFileReceiving(peerId, "", "", transfer.Pending, 0, 0, transfer.Incoming)
-
 		var newFiles []domain.FileMetadata
 
 		for _, rootEntry := range rootEntries {
@@ -90,6 +97,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				FileSize: rootEntry.Size,
 			}
 
+			a.transferRegistry.AddTransferredFile(peerId, transferId, rootEntry.ID, rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
 			newFiles = append(newFiles, newFile)
 		}
 

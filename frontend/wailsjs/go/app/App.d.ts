@@ -26,7 +26,9 @@ export function OnPeerRemoved(arg1:discovery.Peer):Promise<void>;
 
 export function PickDownloadFolder():Promise<string>;
 
-export function PickFile():Promise<string>;
+export function PickFiles():Promise<Array<string>>;
+
+export function PickFolder():Promise<Array<string>>;
 
 export function ReceiveFilePermission(arg1:string,arg2:string,arg3:Record<string, boolean>,arg4:boolean):Promise<void>;
 
