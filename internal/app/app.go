@@ -71,6 +71,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	})
 
 	p.OnDisconnected(func(peer discovery.Peer) {
+		log.Printf("Here in disconnect app.go line 74\n")
 		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
 			//a.discovery.RemovePeerById(peer.ID)

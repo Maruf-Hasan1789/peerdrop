@@ -42,17 +42,17 @@ func (a *App) HandleConnection(conn transport.Connection) {
 	})
 
 	peerSession.OnDisconnected(func(peer discovery.Peer) {
+		log.Printf("Here in handler go line 45\n")
 		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
-			a.transferRegistry.PauseAllByPeerId(peer.ID)
+			//a.transferRegistry.PauseAllByPeerId(peer.ID)
 			log.Printf("Emitting Events\n")
-			a.discovery.RemovePeerById(peer.ID)
 
 			transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peer.ID)
 
 			for _, t := range transferRegistry {
-				if t.PeerId == peer.ID && t.Status == transfer.Paused && t.Direction == transfer.Incoming {
-					log.Printf("transfer %v has been paused\n", t)
+				if t.PeerId == peer.ID && (t.Status == transfer.InProgress || t.Status == transfer.Pending) && t.Direction == transfer.Incoming {
+					log.Printf("transfer %v has been cancelled\n", t)
 					cleanUpPartialDownload(a.settings.DownloadPath, t.RootName)
 					err := addNewTransferFileHistory(peer.UserName, t.RootName, "RECEIVED", "FAILED", t.RootID)
 					if err != nil {
@@ -66,6 +66,8 @@ func (a *App) HandleConnection(conn transport.Connection) {
 					})
 				}
 			}
+
+			a.discovery.RemovePeerById(peer.ID)
 
 			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{
 				"user_name": peer.UserName,
@@ -141,9 +143,10 @@ func (a *App) HandleConnection(conn transport.Connection) {
 }
 
 func cleanUpPartialDownload(downloadPath string, fileName string) {
+	log.Printf("Here in clean up partial download")
 	filePath := filepath.Join(downloadPath, fileName)
 	if _, err := os.Stat(filePath); err == nil {
-		err := os.Remove(filePath)
+		err := os.RemoveAll(filePath)
 		if err != nil {
 			log.Printf("Error removing file %v: %v\n", filePath, err)
 		}
