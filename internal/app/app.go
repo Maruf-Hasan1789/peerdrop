@@ -32,6 +32,11 @@ type pendingPermission struct {
 	session *session.PeerSession
 }
 
+type FileReceivePermissionResponse struct {
+	Mode  protocol.PermissionMode `json:"mode"`
+	Files map[string]bool         `json:"files"`
+}
+
 func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
 	return &App{
 		discovery:          d,
@@ -160,6 +165,22 @@ func (a *App) bindSession(p *session.PeerSession) {
 			"peerId":     peerId,
 			"file":       rootName,
 			"transferId": transferId + rootId,
+		})
+	})
+
+	p.OnTransferPermissionDenied(func(peerId string, transferId string, rootEntries []*protocol.RootEntry) {
+		log.Printf("Here on permission denied")
+		rootNames := make([]string, 0)
+
+		for _, entry := range rootEntries {
+			rootNames = append(rootNames, entry.Name)
+		}
+		log.Printf("Here rootNames %v\n", rootNames)
+
+		runtime.EventsEmit(a.ctx, "transfer-permission-denied", map[string]interface{}{
+			"peerId":     peerId,
+			"transferId": transferId,
+			"files":      rootNames,
 		})
 	})
 }
@@ -362,25 +383,31 @@ func (a *App) GetTransferHistories() []transferHistory {
 	return sentHistories
 }
 
-func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFilePermissions map[string]bool, isAllowedAll bool) {
+func (a *App) ReceiveFilePermission(peerId string, transferId string, permResp FileReceivePermissionResponse) {
 
-	log.Printf("Receive File Permission %v %v %v %v\n", peerId, incomingFilePermissions, isAllowedAll, a.settings.DownloadPath)
+	log.Printf("Receive File Permission %v %v %v \n", peerId, permResp, a.settings.DownloadPath)
 
 	filePermissionControl := &protocol.Control{
 		Action:  protocol.ActionHandshakeAck,
 		Details: fmt.Sprintf("Files permission"),
 	}
 
-	if isAllowedAll {
-		filePermissionControl.AllowAll = true
-		for rootId, _ := range incomingFilePermissions {
+	if permResp.Mode == protocol.PermissionAll {
+		filePermissionControl.Mode = protocol.PermissionAll
+		for rootId, _ := range permResp.Files {
 			a.transferRegistry.UpdateTransferRegistryStatusByRootId(rootId, transfer.InProgress)
 		}
-		a.showTransferRegistryStatus(incomingFilePermissions)
+
+	} else if permResp.Mode == protocol.PermissionNone {
+		filePermissionControl.Mode = protocol.PermissionNone
+		for rootId, _ := range permResp.Files {
+			a.transferRegistry.UpdateTransferRegistryStatusByRootId(rootId, transfer.Rejected)
+		}
 	} else {
+		filePermissionControl.Mode = protocol.PermissionPartial
 		var controls []protocol.FileControl
 
-		for rootId, isAllowed := range incomingFilePermissions {
+		for rootId, isAllowed := range permResp.Files {
 			var transferStatus transfer.Status
 
 			if isAllowed == true {
@@ -397,8 +424,6 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFi
 			})
 		}
 
-		a.showTransferRegistryStatus(incomingFilePermissions)
-		filePermissionControl.AllowAll = false
 		filePermissionControl.Files = controls
 	}
 
@@ -409,14 +434,17 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, incomingFi
 		Control: filePermissionControl,
 	}
 
+	log.Printf("Transfer ID %v\n", transferId)
 	a.mu.Lock()
 	p, ok := a.pendingPermissions[transferId]
 	delete(a.pendingPermissions, transferId)
 	a.mu.Unlock()
 
 	if !ok {
+		log.Printf("Transfer Id %v not found\n", transferId)
 		return
 	}
+	log.Printf("Permission Response %v\n", permissionResponse)
 
 	err := p.session.Send(permissionResponse)
 	log.Printf("Sending permission response %v\n", permissionResponse)

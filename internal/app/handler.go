@@ -122,6 +122,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		a.mu.Unlock()
 
 		if a.settings.IsPermissionRequiredToSendFiles {
+			log.Printf("Sender Info transfer ID %v", transferId)
 			runtime.EventsEmit(a.ctx, "permission-request", senderInfo)
 		} else {
 			maap := make(map[string]bool)
@@ -131,7 +132,12 @@ func (a *App) HandleConnection(conn transport.Connection) {
 			}
 
 			//allowing all files
-			a.ReceiveFilePermission(peerId, transferId, maap, true)
+			permissionResp := FileReceivePermissionResponse{
+				Mode:  protocol.PermissionAll,
+				Files: maap,
+			}
+
+			a.ReceiveFilePermission(peerId, transferId, permissionResp)
 		}
 	})
 

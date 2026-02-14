@@ -1851,3 +1851,48 @@ input:focus + .slider {
 #browse-dropdown-menu .browse-btn {
     width: 140px; /* optional: fixed width for buttons */
 }
+
+.btn-allow.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-deny.active {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-inactive {
+    opacity: 0.4;
+    pointer-events: none;   /* 🚀 disables clicking */
+    cursor: not-allowed;    /* shows disabled cursor */
+}
+
+.toast {
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    animation: slideIn 0.3s ease-out;
+    border-left: 4px solid #4caf50; /* Green for success */
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast {
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Pre-define the transition here */
+    /* ... your other styles ... */
+}
+
+.toast.failed {
+    border-left: 4px solid #ff4d4d;
+    background: #2d1a1a; /* Dark reddish tint for Wails dark mode */
+}
