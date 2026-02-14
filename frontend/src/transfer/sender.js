@@ -174,9 +174,7 @@ EventsOn("transfer-start", (payload) => {
 
 EventsOn("transfer-progress", (payload) => {
     console.log(payload);
-    const totalBytes = Number(payload.totalBytes)
-    const totalReceived = Number(payload.totalReceived)
-    let progress = (totalReceived / totalBytes) * 100
+    let progress = parseFloat(payload.progress) * 100;
     updateProgress(payload.id, progress);
 });
 

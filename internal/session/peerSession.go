@@ -53,6 +53,10 @@ type PeerSession struct {
 	onError               func(err error)
 	fileReceivedListeners []func(peerId string, rootId string, rootName string)
 	onFileOffer           func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
+	onTransferStart       func(peerId string, transferId string, rootId string, rootName string)
+	onTransferCompletion  func(peerId string, transferId string, rootId string, rootName string)
+	onTransferProgress    func(peerId string, transferId, rootId string, rootName string, progress float64)
+	onTransferError       func(peerId string, transferId string, rootId string, rootName string, err error)
 
 	//message handlers map
 	handlers               map[protocol.MessageType]func(msg protocol.Message, downloadPath string)
@@ -128,6 +132,19 @@ func (p *PeerSession) OnFileReceived(fn func(peerId string, rootId string, rootN
 
 func (p *PeerSession) OnFileOffer(fn func(peerId string, transferId string, rootEntries []*protocol.RootEntry, totalSize int64)) {
 	p.onFileOffer = fn
+}
+
+func (p *PeerSession) OnTransferStart(fn func(peerId string, transferId string, rootId string, rootName string)) {
+	p.onTransferStart = fn
+}
+func (p *PeerSession) OnTransferCompletion(fn func(peerId string, transferId string, rootId string, rootName string)) {
+	p.onTransferCompletion = fn
+}
+func (p *PeerSession) OnTransferProgress(fn func(peerId string, transferId, rootId string, rootName string, progress float64)) {
+	p.onTransferProgress = fn
+}
+func (p *PeerSession) OnTransferError(fn func(peerId string, transferId string, rootId string, rootName string, err error)) {
+	p.onTransferError = fn
 }
 
 func (p *PeerSession) readLoop(downloadPath string) {
@@ -300,7 +317,6 @@ func (p *PeerSession) SendHandshakesForFiles(rootEntries []*protocol.RootEntry, 
 }
 
 func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, rootPath string, rootEntry *protocol.RootEntry, chunkSize int) error {
-	ctx := p.ctx
 	peerId := p.peer.ID
 	filePath := rootPath
 
@@ -313,13 +329,11 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 
 	if err != nil {
 		log.Printf("Error opening file %v: %v", fileMeta.Path, err)
-		emitTransferFailedEvent(p.ctx, peerId, rootEntry.ID, rootEntry.Name, transferId)
-		/*fileResultCh <- FileResult{
-			FileId:   fileInfo.FileId,
-			FileName: fileInfo.FileName,
-			Error:    err,
+
+		if p.onTransferError != nil {
+			p.onTransferError(peerId, transferId, rootEntry.ID, rootEntry.Name, err)
 		}
-		*/
+
 		return err
 	}
 
@@ -347,19 +361,16 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 
 		p.rootSendingProgress[rootId] = rootSendProgress
 
-		runtime.EventsEmit(ctx, "transfer-start", map[string]string{
-			"id":         rootId,
-			"peerId":     peerId,
-			"fileName":   rootEntry.Name,
-			"transferId": transferId + rootId,
-		})
+		if p.onTransferStart != nil {
+			p.onTransferStart(peerId, transferId, rootId, rootEntry.Name)
+		}
 	}
 
 	for i := 0; i < totalChunks; i++ {
 		n, err := f.Read(buf)
 
 		if err != nil && err != io.EOF {
-			emitTransferFailedEvent(ctx, peerId, fileMeta.ID, fileMeta.Path, transferId)
+			p.onTransferError(peerId, transferId, rootId, rootEntry.Name, err)
 			return err
 		}
 
@@ -386,7 +397,7 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 		}
 
 		if err := p.Send(msg); err != nil {
-			emitTransferFailedEvent(ctx, peerId, rootId, rootEntry.Name, transferId)
+			p.onTransferError(peerId, transferId, rootId, rootEntry.Name, err)
 			return err
 		}
 
@@ -395,37 +406,21 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 		rootSendProgress.mu.Unlock()
 
 		if time.Since(rootSendProgress.LastEmit) > time.Second {
-			runtime.EventsEmit(ctx, "transfer-progress", map[string]string{
-				"id":            rootId,
-				"peerId":        peerId,
-				"file":          rootEntry.Name,
-				"totalBytes":    strconv.FormatInt(rootSendProgress.TotalBytes, 10),
-				"totalReceived": strconv.FormatInt(rootSendProgress.TransferredBytes, 10),
-				"transferId":    transferId + rootId,
-			})
 			rootSendProgress.LastEmit = time.Now()
+			if p.onTransferProgress != nil {
+				progress := float64(rootSendProgress.TransferredBytes) / float64(rootSendProgress.TotalBytes)
+				p.onTransferProgress(peerId, transferId, rootId, rootEntry.Name, progress)
+			}
 		}
 	}
 
 	if rootSendProgress.TotalBytes == rootSendProgress.TransferredBytes {
-		runtime.EventsEmit(ctx, "transfer-complete", map[string]string{
-			"id":         rootId,
-			"peerId":     peerId,
-			"file":       rootEntry.Name,
-			"transferId": transferId + rootId,
-		})
+		if p.onTransferCompletion != nil {
+			p.onTransferCompletion(peerId, transferId, rootId, rootEntry.Name)
+		}
 	}
 
 	return nil
-}
-
-func emitTransferFailedEvent(ctx context.Context, peerId string, rootEntryId string, rootEntryName string, transferId string) {
-	runtime.EventsEmit(ctx, "transfer-failed", map[string]string{
-		"id":         rootEntryId,
-		"peerId":     peerId,
-		"file":       rootEntryName,
-		"transferId": transferId + rootEntryId,
-	})
 }
 
 func openFile(originalFileName string) (*os.File, error) {
