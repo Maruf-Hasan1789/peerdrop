@@ -352,3 +352,32 @@ toggle.addEventListener('click', (e) => {
 document.addEventListener('click', () => {
     menu.style.display = 'none';
 });
+
+function showNotification(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    // 1. Wait for 5 seconds of visibility
+    setTimeout(() => {
+        // 2. Start the fade out
+        toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)'; // Optional: slight slide up effect
+
+        // 3. Remove from DOM exactly when the 0.5s transition ends
+        setTimeout(() => {
+            toast.remove();
+        }, 500);
+    }, 5000);
+}
+
+
+EventsOn("transfer-permission-denied", (payload) => {
+    console.log("Here transfer permission in frontend")
+    showNotification("Permission denied by the receiver for transfer", "failed");
+});

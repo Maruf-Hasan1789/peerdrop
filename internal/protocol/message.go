@@ -87,12 +87,20 @@ type Resume struct {
 	Missing []int  `json:"missing"`
 }
 
+type PermissionMode uint8
+
+const (
+	PermissionNone PermissionMode = iota
+	PermissionPartial
+	PermissionAll
+)
+
 type Control struct {
 	Action ControlAction `json:"action,omitempty"`
 
-	Files    []FileControl `json:"files,omitempty"`
-	AllowAll bool          `json:"allow_all,omitempty"`
-	Details  string        `json:"details,omitempty"`
+	Files   []FileControl  `json:"files,omitempty"`
+	Mode    PermissionMode `json:"mode,omitempty"`
+	Details string         `json:"details,omitempty"`
 }
 
 type FileControl struct {

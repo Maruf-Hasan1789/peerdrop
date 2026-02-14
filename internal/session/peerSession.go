@@ -53,15 +53,16 @@ type PeerSession struct {
 	onError               func(err error)
 	fileReceivedListeners []func(peerId string, rootId string, rootName string)
 
-	onFileOffer          func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
-	onTransferStart      func(peerId string, transferId string, rootId string, rootName string)
-	onTransferCompletion func(peerId string, transferId string, rootId string, rootName string)
-	onTransferProgress   func(peerId string, transferId, rootId string, rootName string, progress float64)
-	onTransferError      func(peerId string, transferId string, rootId string, rootName string, err error)
+	onFileOffer                func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
+	onTransferStart            func(peerId string, transferId string, rootId string, rootName string)
+	onTransferCompletion       func(peerId string, transferId string, rootId string, rootName string)
+	onTransferProgress         func(peerId string, transferId, rootId string, rootName string, progress float64)
+	onTransferError            func(peerId string, transferId string, rootId string, rootName string, err error)
+	onTransferPermissionDenied func(peerId string, transferId string, rootEntries []*protocol.RootEntry)
 
 	//message handlers map
 	handlers               map[protocol.MessageType]func(msg protocol.Message, downloadPath string)
-	fileSendingPermissions map[string]chan bool
+	fileSendingPermissions map[string]chan *protocol.Control
 	mu                     sync.Mutex
 	activeTransfers        map[string]context.CancelFunc
 
@@ -91,7 +92,7 @@ func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession
 		connectedAt:            time.Now(),
 		handlers:               make(map[protocol.MessageType]func(msg protocol.Message, downloadPath string)),
 		lastSeen:               time.Now(),
-		fileSendingPermissions: make(map[string]chan bool),
+		fileSendingPermissions: make(map[string]chan *protocol.Control),
 		rootPaths:              make(map[string]string),
 		rootEntries:            make(map[string]*protocol.RootEntry),
 		rootReceivingProgress:  make(map[string]*RootProgress),
@@ -149,7 +150,9 @@ func (p *PeerSession) OnTransferProgress(fn func(peerId string, transferId, root
 func (p *PeerSession) OnTransferError(fn func(peerId string, transferId string, rootId string, rootName string, err error)) {
 	p.onTransferError = fn
 }
-
+func (p *PeerSession) OnTransferPermissionDenied(fn func(peerId string, transferId string, rootEntries []*protocol.RootEntry)) {
+	p.onTransferPermissionDenied = fn
+}
 func (p *PeerSession) readLoop(downloadPath string) {
 	defer close(p.done)
 
@@ -218,7 +221,7 @@ func (p *PeerSession) handleControl(msg protocol.Message, downloadPath string) {
 			log.Printf("Permission channel is missing")
 		}
 
-		ch <- msg.Control.AllowAll
+		ch <- msg.Control
 	}
 }
 
@@ -260,16 +263,44 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 	ctx, _ = context.WithCancel(ctx)
 
 	select {
-	case isAllowed := <-permCh:
-		if !isAllowed {
+	case control := <-permCh:
+		if control.Mode == protocol.PermissionNone {
 			log.Printf("Permission is denied\n")
+
+			if p.onTransferPermissionDenied != nil {
+				p.onTransferPermissionDenied(p.peer.ID, transferId, rootEntries)
+			}
+
+			ctx.Done()
+		} else if control.Mode == protocol.PermissionAll {
+
+			for _, rootEntry := range rootEntries {
+				//	wg.Add(1)
+				rootPath := p.rootPaths[rootEntry.ID]
+				go p.SendRootEntry(transferId, rootEntry, rootPath, 1024*1024)
+			}
 		} else {
-			log.Printf("Permission is allowed\n")
+			log.Printf("Partial Permission is allowed\n")
 			//fileResultCh := make(chan FileResult, len(rootEntries))
 			//wg := sync.WaitGroup{}
 			//go showFileResults(fileResultCh)
+			allowedRootID := make(map[string]bool)
+
+			for _, file := range control.Files {
+				if file.Allowed {
+					allowedRootID[file.FileID] = true
+				} else {
+					allowedRootID[file.FileID] = false
+				}
+			}
+
 			for _, rootEntry := range rootEntries {
-				//	wg.Add(1)
+
+				isAllowed, ok := allowedRootID[rootEntry.ID]
+				if !ok || !isAllowed {
+					continue
+				}
+
 				rootPath := p.rootPaths[rootEntry.ID]
 				go p.SendRootEntry(transferId, rootEntry, rootPath, 1024*1024)
 			}
@@ -282,7 +313,6 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 	}
 
 	return nil
-
 }
 
 func (p *PeerSession) SendRootEntry(transferId string, rootEntry *protocol.RootEntry, rootPath string, chunkSize int) {
@@ -646,10 +676,10 @@ func getIncomingFileId(transferId string, rootId string, fileId string) string {
 	return fmt.Sprintf("%v|%v|%v", transferId, rootId, fileId)
 }
 
-func (p *PeerSession) waitForPermission(transferId string) <-chan bool {
+func (p *PeerSession) waitForPermission(transferId string) <-chan *protocol.Control {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	ch := make(chan bool)
+	ch := make(chan *protocol.Control)
 	p.fileSendingPermissions[transferId] = ch
 
 	log.Printf("Waiting for permission %v %v\n", transferId, p.fileSendingPermissions[transferId])

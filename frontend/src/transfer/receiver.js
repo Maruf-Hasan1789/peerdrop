@@ -1,10 +1,179 @@
-import {EventsOn} from "../../wailsjs/runtime";
-import {showToast} from "../utils/utils";
+import { EventsOn } from "../../wailsjs/runtime";
+import { showToast } from "../utils/utils";
+import { ReceiveFilePermission } from "../../wailsjs/go/app/App";
 const receiveListEl = document.getElementById("receive-list");
 const receiveCountEl = document.getElementById("receive-count");
 const receivingTransfers = new Map();
 
-// --- Events from backend ---
+
+
+
+EventsOn("permission-request", (senderInfo) => {
+    console.log(senderInfo);
+    showPermissionPopup(senderInfo)
+});
+
+const PermissionMode = {
+    None: 0,
+    Partial: 1,
+    All: 2
+};
+
+
+let permissionState = {
+    mode: PermissionMode.None,
+    files: {}
+};
+
+function showPermissionPopup(sender) {
+    const modal = document.getElementById("permission-modal");
+    const fileList = modal.querySelector(".pm-files");
+    const partialButton = document.getElementById("partial-permission-btn");
+    const allowAllBtn = document.getElementById("allow-btn");
+    const denyAllBtn = document.getElementById("deny-btn");
+
+    permissionState = {
+        mode: PermissionMode.Partial,
+        files: {}
+    };
+
+    fileList.innerHTML = "";
+    partialButton.disabled = true; // Disable until a selection is made
+    modal.querySelector(".message").textContent =
+        `${sender.user_name} wants to send you the following files:`;
+
+    // --- RENDER FILE LIST ---
+    sender.files.forEach(file => {
+        // Ensure we have a valid ID (fallback if name varies)
+        const fileID = file.id
+
+        const li = document.createElement("li");
+        li.style.cssText = "display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px;";
+
+        const info = document.createElement("span");
+        const sizeMB = file.file_size / (1024 * 1024);
+        info.textContent = `File: ${file.file_name} | Size: ${decimalNumberFormatter.format(sizeMB)} MB`;
+
+        const btnBox = document.createElement("div");
+        btnBox.style.display = "flex";
+        btnBox.style.gap = "6px";
+
+        const allowBtn = document.createElement("button");
+        allowBtn.textContent = "Allow";
+        allowBtn.className = "btn-allow";
+
+        const denyBtn = document.createElement("button");
+        denyBtn.textContent = "Deny";
+        denyBtn.className = "btn-deny";
+
+        // --- ROW-LEVEL CLICK HANDLERS ---
+        // --- ROW-LEVEL CLICK HANDLERS ---
+        allowBtn.onclick = () => {
+            // If already allowed, toggle off (reset)
+            if (permissionState.files[fileID] === true) {
+                delete permissionState.files[fileID];
+                updateRowUI(allowBtn, denyBtn, null);
+            } else {
+                // Set to allowed
+                permissionState.files[fileID] = true;
+                updateRowUI(allowBtn, denyBtn, true);
+            }
+            checkPartialButton();
+        };
+
+        denyBtn.onclick = () => {
+            // If already denied, toggle off (reset)
+            if (permissionState.files[fileID] === false) {
+                delete permissionState.files[fileID];
+                updateRowUI(allowBtn, denyBtn, null);
+            } else {
+                // Set to denied
+                permissionState.files[fileID] = false;
+                updateRowUI(allowBtn, denyBtn, false);
+            }
+            checkPartialButton();
+        };
+
+        btnBox.append(allowBtn, denyBtn);
+        li.append(info, btnBox);
+        fileList.appendChild(li);
+    });
+
+
+    function updateRowUI(allow, deny, isAllowed) {
+        if (isAllowed === null) {
+            // Reset state: show both
+            allow.style.display = "inline-block";
+            deny.style.display = "inline-block";
+
+            allow.classList.remove("active");
+            deny.classList.remove("active");
+        } else if (isAllowed) {
+            // Allowed: Show Allow (active), Hide Deny
+            allow.style.display = "inline-block";
+            deny.style.display = "none";
+
+            allow.classList.add("active");
+            deny.classList.remove("active");
+        } else {
+            // Denied: Hide Allow, Show Deny (active)
+            allow.style.display = "none";
+            deny.style.display = "inline-block";
+
+            allow.classList.remove("active");
+            deny.classList.add("active");
+        }
+    }
+
+    function checkPartialButton() {
+        const count = Object.keys(permissionState.files).length;
+        partialButton.disabled = (count === 0);
+    }
+
+    function finalizeAndSend(mode) {
+        permissionState.mode = mode;
+
+        if (mode !== PermissionMode.Partial) {
+            permissionState.files = {};
+        } else {
+            sender.files.forEach(file => {
+                const fid = file.id;
+                if (permissionState.files[fid] === undefined) {
+                    permissionState.files[fid] = false;
+                }
+            });
+        }
+
+        ReceiveFilePermission(sender.id, sender.transfer_id, permissionState)
+            .then(() => {
+                console.log(`Permission sent: ${mode}`);
+                modal.style.display = "none";
+            })
+            .catch(err => console.error("Failed to send permission:", err));
+    }
+
+    // --- MAIN ACTION BUTTON HANDLERS ---
+    // Using .onclick ensures we overwrite previous listeners from other popup calls
+    allowAllBtn.onclick = () => finalizeAndSend(PermissionMode.All);
+    denyAllBtn.onclick = () => finalizeAndSend(PermissionMode.None);
+    partialButton.onclick = () => finalizeAndSend(PermissionMode.Partial);
+
+    // Show the modal
+    modal.style.display = "flex";
+}
+
+
+
+
+
+const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
+
+
+
 
 EventsOn("receiving-started", (payload) => {
     // payload: { id, fileName, totalChunks, totalReceived }
@@ -17,7 +186,7 @@ EventsOn("receiving-progress", (payload) => {
 
     const received = Number(payload.totalReceived);
     const total = Number(payload.totalBytes);
-    
+
     console.log("Received " + received + " Total " + total)
 
     const progress = (received / total) * 100;
