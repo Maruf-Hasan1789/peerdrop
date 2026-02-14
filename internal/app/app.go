@@ -58,6 +58,7 @@ func (a *App) Name(name string) string {
 }
 
 func (a *App) bindSession(p *session.PeerSession) {
+	log.Printf("Here in bind session\n")
 	p.OnFileReceived(func(peerId string, rootId string, rootName string) {
 		log.Printf("File received: in Bind Session %s", rootName)
 		if a.ctx != nil {
@@ -101,13 +102,55 @@ func (a *App) bindSession(p *session.PeerSession) {
 				return
 			}
 		}
+	})
 
+	p.OnTransferStart(func(peerId string, transferId string, rootId string, rootName string) {
+		log.Printf("Transfer Started \n")
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "transfer-start", map[string]string{
+				"id":         rootId,
+				"peerId":     peerId,
+				"fileName":   rootName,
+				"transferId": transferId + rootId,
+			})
+		}
+	})
+
+	p.OnTransferCompletion(func(peerId string, transferId string, rootId string, rootName string) {
+		log.Printf("Here on transfer completion")
+		runtime.EventsEmit(a.ctx, "transfer-complete", map[string]string{
+			"id":         rootId,
+			"peerId":     peerId,
+			"file":       rootName,
+			"transferId": transferId + rootId,
+		})
+	})
+
+	p.OnTransferProgress(func(peerId string, transferId string, rootId string, rootName string, progress float64) {
+		log.Printf("On Transfer Progress \n")
+		runtime.EventsEmit(a.ctx, "transfer-progress", map[string]string{
+			"id":         rootId,
+			"peerId":     peerId,
+			"file":       rootName,
+			"progress":   fmt.Sprintf("%.2f", progress),
+			"transferId": transferId + rootId,
+		})
+	})
+
+	p.OnTransferError(func(peerId string, transferId string, rootId string, rootName string, err error) {
+		runtime.EventsEmit(a.ctx, "transfer-failed", map[string]string{
+			"id":         rootId,
+			"peerId":     peerId,
+			"file":       rootName,
+			"transferId": transferId + rootId,
+		})
 	})
 }
 
 var peerSessions = make(map[string]*session.PeerSession)
 
 func (a *App) RegisterSession(peerSession *session.PeerSession) {
+	log.Printf("Here is register session\n")
 	peerSessions[peerSession.GetPeerInfo().ID] = peerSession
 	a.bindSession(peerSession)
 }
@@ -162,6 +205,7 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 
 		selectedPeerSession = session.NewPeerSession(a.ctx, conn)
 		selectedPeerSession.Start(a.settings.DownloadPath)
+		log.Printf("Here before registering session\n")
 		a.RegisterSession(selectedPeerSession)
 	}
 
