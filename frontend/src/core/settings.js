@@ -1,5 +1,5 @@
-import {GetSettings, PickDownloadFolder, ReceiveFilePermission, SaveSettings} from "../../wailsjs/go/app/App";
-import {EventsOn} from "../../wailsjs/runtime";
+import { GetSettings, PickDownloadFolder, ReceiveFilePermission, SaveSettings } from "../../wailsjs/go/app/App";
+import {BrowserOpenURL, EventsOn} from "../../wailsjs/runtime";
 
 const settingsModal = document.getElementById("settings-modal");
 const settingsButton = document.getElementById("settings-toggle");
@@ -17,7 +17,7 @@ async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
         //console.log('Loaded settings:', settings);
-        originalSettings = {...settings}
+        originalSettings = { ...settings }
 
         // Populate inputs
         userName.value = settings.user_name || '';
@@ -54,7 +54,7 @@ saveSettingsBtn.addEventListener("click", async () => {
     try {
         console.log(updatedSettings)
         await SaveSettings(updatedSettings)
-        originalSettings = {...updatedSettings}
+        originalSettings = { ...updatedSettings }
         alert("Settings saved successfully")
         loadSettings().then(r => console.log("Settings loaded"))
     } catch (err) {
@@ -90,3 +90,55 @@ function hasSettingsChanged() {
 
     return Object.keys(currentSettings).some(key => currentSettings[key] !== originalSettings[key]);
 }
+
+const navButtons = document.querySelectorAll(".modal-nav-item");
+const footer = document.querySelector(".modal-footer"); // footer container
+
+navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const section = btn.dataset.section; // "general" or "about"
+
+        // Remove "active" from all buttons
+        navButtons.forEach(b => b.classList.remove("active"));
+
+        // Remove "active" from all sections
+        document.querySelectorAll(".settings-section").forEach(s => s.classList.remove("active"));
+
+        // Activate clicked button
+        btn.classList.add("active");
+
+        // Show corresponding section
+        document.getElementById(`settings-${section}`).classList.add("active");
+
+        // Update header title and subtitle
+        const titleEl = document.getElementById("settings-section-title");
+        const subtitleEl = document.getElementById("settings-section-subtitle");
+
+        if (section === "general") {
+            titleEl.textContent = "General";
+            subtitleEl.textContent = "Manage basic application preferences";
+            footer.style.display = "flex"; // show footer
+        } else if (section === "about") {
+            titleEl.textContent = "About";
+            subtitleEl.textContent = "";
+            footer.style.display = "none"; // hide footer
+        }
+    });
+});
+
+// Select the About page container
+const aboutPage = document.getElementById("aboutPage");
+
+// Add a click handler for all links inside the About page
+aboutPage.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", (e) => {
+        e.stopPropagation(); // prevent modal or default interference
+        e.preventDefault();
+        const href = link.getAttribute("href");
+
+        if (href) {
+            BrowserOpenURL(href)
+        }
+    });
+});
+

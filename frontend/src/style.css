@@ -1896,3 +1896,41 @@ input:focus + .slider {
     border-left: 4px solid #ff4d4d;
     background: #2d1a1a; /* Dark reddish tint for Wails dark mode */
 }
+
+/* Add spacing inside the About section */
+.about-container {
+    padding: 1.5rem; /* give it breathing space */
+}
+
+.about-title {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.about-container p {
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.about-links {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+
+.author-link {
+    color: #4CAF50;       /* green link */
+    text-decoration: none; /* remove underline */
+}
+
+.author-link:hover {
+    text-decoration: underline;
+}
+
+.about-quote {
+    margin-top: 1rem;
+    font-style: italic;
+    opacity: 0.8;
+    text-align: center;
+}

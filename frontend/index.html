@@ -167,6 +167,10 @@
                     <span class="material-symbols-outlined">settings</span>
                     <span>General</span>
                 </button>
+                <button class="modal-nav-item" data-section="about" id="nav-about">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>About</span>
+                </button>
             </nav>
         </div>
         <div class="modal-content">
@@ -179,6 +183,7 @@
                 </button>
             </div>
             <div class="settings-content">
+
                 <!-- General Section -->
                 <div id="settings-general" class="settings-section active">
                     <div class="setting-item">
@@ -188,6 +193,7 @@
                         </div>
                         <input type="text" id="userName" class="setting-input" placeholder="Enter your name">
                     </div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <label for="permissionToggle" class="setting-label">Require Permission</label>
@@ -198,6 +204,7 @@
                             <span class="slider"></span>
                         </label>
                     </div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <label for="downloadPath" class="setting-label">Download Location</label>
@@ -212,7 +219,49 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- About Section -->
+                <div id="settings-about" class="settings-section">
+                    <div id="aboutPage" class="about-container">
+
+                        <h3 class="about-title">Peerdrop</h3>
+
+                        <p id="aboutVersion">Version: 0.1.0</p>
+                        <p id="aboutAuthor">
+                            Developed by:
+                            <a href="https://www.linkedin.com/in/marufhasan1789/" target="_blank" class="author-link">
+                                Maruf Hasan
+                            </a>
+                        </p>
+                        <p id="aboutProductDesigner">
+                            Product Designed By:
+                            <a href="https://www.linkedin.com/in/sharior/" target="_blank" class="author-link">
+                                Farhan Sharior
+                            </a>
+                        </p>
+
+                        <p id="aboutDescription">
+                            This app began as a spark of an idea from Farhan and was crafted into reality by Maruf.
+                        </p>
+
+                        <p class="about-quote">
+                            <em>À Mikasa — La vie en rose, toujours.</em>
+                        </p>
+
+                        <div class="about-links">
+                            <a href="https://github.com/Maruf-Hasan1789/peerdrop" id="aboutGithub" target="_blank" class="about-link">
+                                GitHub Repository
+                            </a><br>
+                            <a href="mailto:marufhasan212@gmail.com" id="aboutSupport" class="about-link">
+                                Contact Support
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="settingsCancelButton">Cancel</button>
                 <button class="btn btn-primary" id="saveSettingsButton">Save</button>
