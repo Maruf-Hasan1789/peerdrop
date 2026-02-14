@@ -52,11 +52,12 @@ type PeerSession struct {
 	onDisconnected        func(peer discovery.Peer)
 	onError               func(err error)
 	fileReceivedListeners []func(peerId string, rootId string, rootName string)
-	onFileOffer           func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
-	onTransferStart       func(peerId string, transferId string, rootId string, rootName string)
-	onTransferCompletion  func(peerId string, transferId string, rootId string, rootName string)
-	onTransferProgress    func(peerId string, transferId, rootId string, rootName string, progress float64)
-	onTransferError       func(peerId string, transferId string, rootId string, rootName string, err error)
+
+	onFileOffer          func(peerId string, transferId string, rootEntry []*protocol.RootEntry, totalSize int64)
+	onTransferStart      func(peerId string, transferId string, rootId string, rootName string)
+	onTransferCompletion func(peerId string, transferId string, rootId string, rootName string)
+	onTransferProgress   func(peerId string, transferId, rootId string, rootName string, progress float64)
+	onTransferError      func(peerId string, transferId string, rootId string, rootName string, err error)
 
 	//message handlers map
 	handlers               map[protocol.MessageType]func(msg protocol.Message, downloadPath string)
@@ -137,9 +138,11 @@ func (p *PeerSession) OnFileOffer(fn func(peerId string, transferId string, root
 func (p *PeerSession) OnTransferStart(fn func(peerId string, transferId string, rootId string, rootName string)) {
 	p.onTransferStart = fn
 }
+
 func (p *PeerSession) OnTransferCompletion(fn func(peerId string, transferId string, rootId string, rootName string)) {
 	p.onTransferCompletion = fn
 }
+
 func (p *PeerSession) OnTransferProgress(fn func(peerId string, transferId, rootId string, rootName string, progress float64)) {
 	p.onTransferProgress = fn
 }
@@ -397,6 +400,7 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 		}
 
 		if err := p.Send(msg); err != nil {
+			log.Printf("Here on line 403\n")
 			p.onTransferError(peerId, transferId, rootId, rootEntry.Name, err)
 			return err
 		}
