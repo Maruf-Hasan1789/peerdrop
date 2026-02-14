@@ -118,6 +118,16 @@ func (a *App) bindSession(p *session.PeerSession) {
 
 	p.OnTransferCompletion(func(peerId string, transferId string, rootId string, rootName string) {
 		log.Printf("Here on transfer completion")
+
+		a.transferRegistry.RemoveFileRegistryUponCompletion(peerId, rootId)
+		log.Printf("Sending file to peer %v\n", peerId)
+
+		err := addNewTransferFileHistory(p.GetPeerInfo().UserName, rootName, "SENT", "COMPLETED", transferId)
+
+		if err != nil {
+			log.Printf("Error adding file to peer %v\n", peerId)
+		}
+
 		runtime.EventsEmit(a.ctx, "transfer-complete", map[string]string{
 			"id":         rootId,
 			"peerId":     peerId,
@@ -219,7 +229,6 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []string, transferId string) error {
 
 	peerId := peerSession.GetPeerInfo().ID
-	//a.transferRegistry.AddFileSending(peerId, fileId, fileName, transfer.InProgress, 0, 0, transfer.Outgoing)
 	startingTime := time.Now()
 	err := peerSession.SendToPeer(transferId, filePaths)
 
@@ -238,16 +247,6 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []s
 	log.Printf("Sent successfully")
 
 	return nil
-	/*a.transferRegistry.RemoveFileUponSendingCompletion(peerId, fileId)
-	log.Printf("Sending file to peer %v\n", peerId)
-
-	err = addNewTransferFileHistory(peerSession.GetPeerInfo().UserName, filepath.Base(filePath), "SENT", "COMPLETED", transferId)
-
-	if err != nil {
-		log.Printf("Error adding file to peer %v\n", peerId)
-	}
-
-	*/
 }
 
 func (a *App) PickFiles() ([]string, error) {
