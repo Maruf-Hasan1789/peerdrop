@@ -1,5 +1,5 @@
-import {GetSettings, PickDownloadFolder, ReceiveFilePermission, SaveSettings} from "../../wailsjs/go/app/App";
-import {EventsOn} from "../../wailsjs/runtime";
+import { GetSettings, PickDownloadFolder, ReceiveFilePermission, SaveSettings } from "../../wailsjs/go/app/App";
+import {BrowserOpenURL, EventsOn} from "../../wailsjs/runtime";
 
 const settingsModal = document.getElementById("settings-modal");
 const settingsButton = document.getElementById("settings-toggle");
@@ -17,7 +17,7 @@ async function loadSettings() {
     try {
         const settings = await GetSettings(); // Call Go backend
         //console.log('Loaded settings:', settings);
-        originalSettings = {...settings}
+        originalSettings = { ...settings }
 
         // Populate inputs
         userName.value = settings.user_name || '';
@@ -54,7 +54,7 @@ saveSettingsBtn.addEventListener("click", async () => {
     try {
         console.log(updatedSettings)
         await SaveSettings(updatedSettings)
-        originalSettings = {...updatedSettings}
+        originalSettings = { ...updatedSettings }
         alert("Settings saved successfully")
         loadSettings().then(r => console.log("Settings loaded"))
     } catch (err) {
@@ -91,40 +91,54 @@ function hasSettingsChanged() {
     return Object.keys(currentSettings).some(key => currentSettings[key] !== originalSettings[key]);
 }
 
-EventsOn("permission-request", (senderInfo) => {
-    console.log(senderInfo);
-    showPermissionPopup(senderInfo)
-});
+const navButtons = document.querySelectorAll(".modal-nav-item");
+const footer = document.querySelector(".modal-footer"); // footer container
 
+navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const section = btn.dataset.section; // "general" or "about"
 
-function showPermissionPopup(sender) {
-    const modal = document.getElementById("permission-modal");
-    const message = modal.querySelector(".message");
-    const fileList = modal.querySelector(".pm-files");
+        // Remove "active" from all buttons
+        navButtons.forEach(b => b.classList.remove("active"));
 
-    message.textContent = `${sender.user_name} wants to send you the following files:`;
+        // Remove "active" from all sections
+        document.querySelectorAll(".settings-section").forEach(s => s.classList.remove("active"));
 
-    fileList.innerHTML = "";
-    sender.files.forEach(file => {
-        const li = document.createElement("li");
-        li.textContent = `File Name: ${file.file_name} Size: ${decimalNumberFormatter.format((file.file_size) / (1024 * 1024))} MB`;
-        fileList.appendChild(li);
+        // Activate clicked button
+        btn.classList.add("active");
+
+        // Show corresponding section
+        document.getElementById(`settings-${section}`).classList.add("active");
+
+        // Update header title and subtitle
+        const titleEl = document.getElementById("settings-section-title");
+        const subtitleEl = document.getElementById("settings-section-subtitle");
+
+        if (section === "general") {
+            titleEl.textContent = "General";
+            subtitleEl.textContent = "Manage basic application preferences";
+            footer.style.display = "flex"; // show footer
+        } else if (section === "about") {
+            titleEl.textContent = "About";
+            subtitleEl.textContent = "";
+            footer.style.display = "none"; // hide footer
+        }
     });
-
-    modal.style.display = "flex";
-
-    document.getElementById("allow-btn").onclick = () => {
-        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, true).then(r => console.log("Permission granted"));
-        modal.style.display = "none";
-    };
-
-    document.getElementById("deny-btn").onclick = () => {
-        ReceiveFilePermission(sender.id, sender.files[0].name, sender.files[0].id, false).then(r => console.log("Permission denied"));
-        modal.style.display = "none";
-    };
-}
-
-const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
 });
+
+// Select the About page container
+const aboutPage = document.getElementById("aboutPage");
+
+// Add a click handler for all links inside the About page
+aboutPage.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", (e) => {
+        e.stopPropagation(); // prevent modal or default interference
+        e.preventDefault();
+        const href = link.getAttribute("href");
+
+        if (href) {
+            BrowserOpenURL(href)
+        }
+    });
+});
+

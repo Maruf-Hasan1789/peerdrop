@@ -1,5 +1,5 @@
 import {EventsOn} from "../../wailsjs/runtime";
-import {DisconnectPeer, PickFile, SendFileToPeer} from "../../wailsjs/go/app/App";
+import {DisconnectPeer, PickFiles, PickFolder, SendFileToPeer} from "../../wailsjs/go/app/App";
 import {showToast} from "../utils/utils";
 
 const connectionErrorMsg = document.getElementById('connection-error-msg');
@@ -18,6 +18,13 @@ const dropZone = document.getElementById("drop-zone");
 const clearFileBtn = document.getElementById("clear-file");
 let filePath = new Set();
 const selectedFileList = document.getElementById("selectedFileListContainer");
+
+
+const pickFile = document.getElementById("pick-file");
+const pickFolder = document.getElementById("pick-folder");
+
+const toggle = document.getElementById('browse-dropdown-toggle');
+const menu = document.getElementById('browse-dropdown-menu');
 
 
 export const ongoingTransfers = new Map();
@@ -56,7 +63,7 @@ function createTransferCard(id, peerId, fileName, transferId) {
         state: "active"
     };
 
-    ongoingTransfers.set(transferId, transfer);
+    ongoingTransfers.set(id, transfer);
     updateTransferCount();
 
     const pauseBtn = card.querySelector(".pause");
@@ -104,8 +111,8 @@ export function cancelTransfer(transferId, reason = "unknown") {
 }
 
 
-function updateProgress(transferId, progress) {
-    const transfer = ongoingTransfers.get(transferId);
+function updateProgress(id, progress) {
+    const transfer = ongoingTransfers.get(id);
     if (!transfer || transfer.state !== "active") return;
 
     const progressBar = transfer.card.querySelector(".progress-bar");
@@ -119,7 +126,7 @@ function updateProgress(transferId, progress) {
 
     if (progress === 100) {
         setTimeout(() => {
-            cancelTransfer(transferId, "completed");
+            cancelTransfer(id, "completed");
         }, 1000);
     }
 }
@@ -166,14 +173,14 @@ EventsOn("transfer-start", (payload) => {
 
 
 EventsOn("transfer-progress", (payload) => {
-    //console.log(payload);
-    let progress = ((Number(payload.chunkIndex) + 1) / (Number(payload.totalChunks))) * 100
-    updateProgress(payload.transferId, progress);
+    console.log(payload);
+    let progress = parseFloat(payload.progress) * 100;
+    updateProgress(payload.id, progress);
 });
 
 EventsOn("transfer-complete", (payload) => {
     console.log(payload);
-    updateProgress(payload.transferId, 100);
+    updateProgress(payload.id, 100);
 });
 
 
@@ -320,3 +327,57 @@ export function clearReceiverSelection() {
         .forEach(el => el.classList.remove("selected"));
 }
 
+
+pickFile.addEventListener("click", async () => {
+    console.log("Picking File")
+    const pickedFiles = await PickFiles();
+    console.log("Picked Files ", pickedFiles);
+    handleFileSelection(pickedFiles);
+});
+
+pickFolder.addEventListener("click", async ()=> {
+   console.log("Picking Folder");
+   const pickedFolder = await PickFolder();
+   console.log("Picked Folder ", pickedFolder)
+    handleFileSelection(pickedFolder);
+});
+
+
+toggle.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent document click from immediately hiding
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+});
+
+// Hide dropdown if clicking outside
+document.addEventListener('click', () => {
+    menu.style.display = 'none';
+});
+
+function showNotification(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    // 1. Wait for 5 seconds of visibility
+    setTimeout(() => {
+        // 2. Start the fade out
+        toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)'; // Optional: slight slide up effect
+
+        // 3. Remove from DOM exactly when the 0.5s transition ends
+        setTimeout(() => {
+            toast.remove();
+        }, 500);
+    }, 5000);
+}
+
+
+EventsOn("transfer-permission-denied", (payload) => {
+    console.log("Here transfer permission in frontend")
+    showNotification("Permission denied by the receiver for transfer", "failed");
+});

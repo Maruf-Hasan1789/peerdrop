@@ -18,6 +18,7 @@ type transferHistoryList struct {
 
 type transferHistory struct {
 	Peer         string `json:"peer"`
+	TransferID   string `json:"transfer_id"`
 	FileName     string `json:"file_name"`
 	TransferType string `json:"transfer_type"` //SENT or RECEIVED
 	Status       string `json:"status"`        //COMPLETED or FAILED
@@ -91,7 +92,8 @@ func getHistoryFilePath() (string, error) {
 	return historyFile, nil
 }
 
-func addNewTransferFileHistory(peer string, fileName string, transferType string, status string) error {
+func addNewTransferFileHistory(peer string, fileName string, transferType string, status string, rootId string) error {
+	fmt.Printf("rootId ID for future update %v\n", rootId) //may need transfer Id here
 	fileHistories, err := loadOrCreateTransferHistory()
 
 	if err != nil {
@@ -157,13 +159,14 @@ func clearTransferHistories() error {
 
 	file, err := os.OpenFile(historyFilePath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to clear history: %v", err)
+		return fmt.Errorf("failed to open history file: %v", err)
 	}
 
 	defer file.Close()
 
 	_, err = file.Write([]byte("[]"))
 	if err != nil {
+		log.Printf("Error clearing sent transfer history: %v\n", err)
 		return fmt.Errorf("failed to write empty array: %v", err)
 	}
 

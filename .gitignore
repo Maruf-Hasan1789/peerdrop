@@ -36,3 +36,5 @@ go.work.sum
 frontend/node_modules
 frontend/dist/
 /build
+# Ignore Wails frontend Go bindings
+frontend/wailsjs/go/

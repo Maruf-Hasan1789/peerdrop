@@ -67,7 +67,8 @@
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     width: 100%;
 }
@@ -86,7 +87,7 @@ body::before {
     position: fixed;
     inset: 0;
     background: radial-gradient(circle at 20% 50%, rgba(43, 108, 238, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
+        radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
@@ -304,10 +305,13 @@ body::before {
 }
 
 @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
         transform: scale(1);
     }
+
     50% {
         opacity: 0.6;
         transform: scale(1.2);
@@ -521,17 +525,25 @@ body::before {
 }
 
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0px) rotate(0deg);
     }
+
     50% {
         transform: translateY(-12px) rotate(2deg);
     }
 }
 
 @keyframes shimmer {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    100% { transform: translateX(200%) translateY(200%) rotate(45deg); }
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(200%) translateY(200%) rotate(45deg);
+    }
 }
 
 .upload-icon {
@@ -587,12 +599,14 @@ body::before {
         opacity: 0;
         transform: translateY(-20px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
 }
-.file-info-bar{
+
+.file-info-bar {
     display: flex;
     gap: var(--spacing-md);
     width: 100%;
@@ -605,6 +619,7 @@ body::before {
     flex: 1;
     min-width: 0;
 }
+
 .file-details {
     display: flex;
     align-items: center;
@@ -629,11 +644,11 @@ body::before {
     color: var(--primary);
 }
 
-.file-actions{
+.file-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap:8px;
+    gap: 8px;
 }
 
 #clear-file {
@@ -654,12 +669,16 @@ body::before {
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg); /* increase padding */
-    background: rgba(22, 27, 38, 0.6); /* matches your app background */
+    padding: var(--spacing-md) var(--spacing-lg);
+    /* increase padding */
+    background: rgba(22, 27, 38, 0.6);
+    /* matches your app background */
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 100%; /* full width of container */
-    max-width: 100%; /* prevent shrinking */
+    min-width: 100%;
+    /* full width of container */
+    max-width: 100%;
+    /* prevent shrinking */
     box-shadow: 0 4px 16px rgba(43, 108, 238, 0.2);
     transition: all var(--transition-spring);
     font-size: var(--font-size-sm);
@@ -692,7 +711,8 @@ body::before {
 
 
 .file-name {
-    flex: 1; /* takes remaining space */
+    flex: 1;
+    /* takes remaining space */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -800,6 +820,7 @@ body::before {
         opacity: 0;
         transform: scale(0.5) rotate(-180deg);
     }
+
     to {
         opacity: 1;
         transform: scale(1) rotate(0deg);
@@ -856,6 +877,7 @@ body::before {
         opacity: 0;
         transform: translateX(-30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -961,8 +983,13 @@ body::before {
 }
 
 @keyframes shimmer-progress {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .transfer-actions {
@@ -1021,6 +1048,7 @@ body::before {
         opacity: 0;
         transform: translateX(30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -1237,8 +1265,13 @@ body::before {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-container {
@@ -1262,6 +1295,7 @@ body::before {
         opacity: 0;
         transform: scale(0.9) translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -1390,6 +1424,7 @@ body::before {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1523,6 +1558,9 @@ body::before {
 /* History Modal */
 .history-modal {
     max-width: 1000px;
+    padding: var(--spacing-xl);
+    display: flex;
+    flex-direction: column;
 }
 
 .history-modal .modal-header {
@@ -1634,10 +1672,10 @@ body::before {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    display: grid;
-    grid-template-columns: 2fr 1.5fr 1fr 1fr auto;
-    gap: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    gap: var(--spacing-md);
     transition: all var(--transition-spring);
     cursor: default;
 }
@@ -1653,6 +1691,16 @@ body::before {
     align-items: center;
     gap: var(--spacing-md);
     min-width: 0;
+    flex: 1;
+}
+
+.history-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-xs);
+    text-align: right;
+    flex-shrink: 0;
 }
 
 .history-file-icon {
@@ -1780,18 +1828,18 @@ body::before {
     border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--primary);
     border-color: var(--primary);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(24px);
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-input:focus + .slider {
+input:focus+.slider {
     box-shadow: 0 0 1px var(--primary);
 }
 
@@ -1800,7 +1848,8 @@ input:focus + .slider {
    ============================================ */
 .close-modal-icon {
     font-size: 20px;
-    pointer-events: none; /* Let button handle click */
+    pointer-events: none;
+    /* Let button handle click */
 }
 
 /* Ensure modal overlays stack correctly if needed, though they are full screen */
@@ -1816,7 +1865,7 @@ input:focus + .slider {
     color: #fff;
     padding: 12px 16px;
     border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     opacity: 0;
     transform: translateY(10px);
     transition: all 0.3s ease;
@@ -1826,4 +1875,132 @@ input:focus + .slider {
 .toast.show {
     opacity: 1;
     transform: translateY(0);
+}
+
+.browse-wrapper {
+    position: relative;
+    /* Dropdown will be positioned relative to this */
+    display: inline-block;
+}
+
+#browse-dropdown-menu {
+    position: absolute;
+    top: 50%;
+    /* start roughly centered vertically */
+    left: 100%;
+    /* start at the right edge of the button */
+    transform: translateY(-50%);
+    /* move vertically to center */
+    display: none;
+    /* hidden by default */
+    flex-direction: column;
+    gap: 0.5rem;
+    background: rgba(22, 27, 38, 0.95);
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+#browse-dropdown-menu .browse-btn {
+    width: 140px;
+    /* optional: fixed width for buttons */
+}
+
+.btn-allow.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-deny.active {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-inactive {
+    opacity: 0.4;
+    pointer-events: none;
+    /* 🚀 disables clicking */
+    cursor: not-allowed;
+    /* shows disabled cursor */
+}
+
+.toast {
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    animation: slideIn 0.3s ease-out;
+    border-left: 4px solid #4caf50;
+    /* Green for success */
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    /* Pre-define the transition here */
+    /* ... your other styles ... */
+}
+
+.toast.failed {
+    border-left: 4px solid #ff4d4d;
+    background: #2d1a1a;
+    /* Dark reddish tint for Wails dark mode */
+}
+
+/* Add spacing inside the About section */
+.about-container {
+    padding: 1.5rem;
+    /* give it breathing space */
+}
+
+.about-title {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.about-container p {
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.about-links {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+
+.author-link {
+    color: #4CAF50;
+    /* green link */
+    text-decoration: none;
+    /* remove underline */
+}
+
+.author-link:hover {
+    text-decoration: underline;
+}
+
+.about-quote {
+    margin-top: 1rem;
+    font-style: italic;
+    opacity: 0.8;
+    text-align: center;
 }

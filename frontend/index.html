@@ -68,6 +68,28 @@
                             <span class="material-symbols-outlined upload-icon">cloud_upload</span>
                         </div>
                         <p class="drop-zone-text">Drag & drop files here</p>
+                        <div class="browse-wrapper">
+                            <!-- Main Browse Button -->
+                            <button id="browse-dropdown-toggle" class="browse-btn">
+                                <span class="material-symbols-outlined">folder_open</span>
+                                <span>Browse</span>
+                            </button>
+
+                            <!-- Dropdown Menu (hidden by default) -->
+                            <div id="browse-dropdown-menu" class="dropdown-menu">
+                                <button type="button" id="pick-file" class="browse-btn">
+                                    <span class="material-symbols-outlined">folder_open</span>
+                                    <span>Browse Files</span>
+                                </button>
+                                <button type="button" id="pick-folder" class="browse-btn">
+                                    <span class="material-symbols-outlined">folder_open</span>
+                                    <span>Browse Folder</span>
+                                </button>
+                            </div>
+                        </div>
+
+
+
                     </div>
                 </div>
 
@@ -145,6 +167,10 @@
                     <span class="material-symbols-outlined">settings</span>
                     <span>General</span>
                 </button>
+                <button class="modal-nav-item" data-section="about" id="nav-about">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>About</span>
+                </button>
             </nav>
         </div>
         <div class="modal-content">
@@ -157,6 +183,7 @@
                 </button>
             </div>
             <div class="settings-content">
+
                 <!-- General Section -->
                 <div id="settings-general" class="settings-section active">
                     <div class="setting-item">
@@ -166,6 +193,7 @@
                         </div>
                         <input type="text" id="userName" class="setting-input" placeholder="Enter your name">
                     </div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <label for="permissionToggle" class="setting-label">Require Permission</label>
@@ -176,6 +204,7 @@
                             <span class="slider"></span>
                         </label>
                     </div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <label for="downloadPath" class="setting-label">Download Location</label>
@@ -190,7 +219,49 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- About Section -->
+                <div id="settings-about" class="settings-section">
+                    <div id="aboutPage" class="about-container">
+
+                        <h3 class="about-title">Peerdrop</h3>
+
+                        <p id="aboutVersion">Version: 0.1.0</p>
+                        <p id="aboutAuthor">
+                            Developed by:
+                            <a href="https://www.linkedin.com/in/marufhasan1789/" target="_blank" class="author-link">
+                                Maruf Hasan
+                            </a>
+                        </p>
+                        <p id="aboutProductDesigner">
+                            Product Designed By:
+                            <a href="https://www.linkedin.com/in/sharior/" target="_blank" class="author-link">
+                                Farhan Sharior
+                            </a>
+                        </p>
+
+                        <p id="aboutDescription">
+                            This app began as a spark of an idea from Farhan and was crafted into reality by Maruf.
+                        </p>
+
+                        <p class="about-quote">
+                            <em>À Mikasa — La vie en rose, toujours.</em>
+                        </p>
+
+                        <div class="about-links">
+                            <a href="https://github.com/Maruf-Hasan1789/peerdrop" id="aboutGithub" target="_blank" class="about-link">
+                                GitHub Repository
+                            </a><br>
+                            <a href="mailto:marufhasan212@gmail.com" id="aboutSupport" class="about-link">
+                                Contact Support
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="settingsCancelButton">Cancel</button>
                 <button class="btn btn-primary" id="saveSettingsButton">Save</button>
@@ -246,6 +317,7 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="deny-btn">Deny</button>
             <button class="btn btn-primary" id="allow-btn">Accept</button>
+            <button class="btn btn-primary" id="partial-permission-btn">Accept Selected Ones</button>
         </div>
     </div>
 </div>
@@ -261,6 +333,7 @@
         </div>
     </div>
 </div>
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
 
 <script type="module" src="src/main.js"></script>
 </body>
