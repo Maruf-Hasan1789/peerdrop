@@ -622,9 +622,16 @@ body::before {
 
 .file-details {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     width: 100%;
+    gap: var(--spacing-md);
+}
+
+#selectedFileListContainer {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 
@@ -649,6 +656,7 @@ body::before {
     justify-content: flex-end;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 #clear-file {
@@ -659,9 +667,8 @@ body::before {
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    word-break: break-all;
 }
 
 .file-item {
@@ -670,15 +677,10 @@ body::before {
     justify-content: space-between;
     gap: var(--spacing-md);
     padding: var(--spacing-md) var(--spacing-lg);
-    /* increase padding */
     background: rgba(22, 27, 38, 0.6);
-    /* matches your app background */
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 100%;
-    /* full width of container */
-    max-width: 100%;
-    /* prevent shrinking */
+    width: 100%;
     box-shadow: 0 4px 16px rgba(43, 108, 238, 0.2);
     transition: all var(--transition-spring);
     font-size: var(--font-size-sm);
@@ -712,10 +714,8 @@ body::before {
 
 .file-name {
     flex: 1;
-    /* takes remaining space */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    word-break: break-all;
     color: var(--text-primary);
 }
 
