@@ -193,7 +193,7 @@ EventsOn("transfer-failed", (payload) => {
     );
 });
 
-EventsOn("wails:file-drop", (x, y, paths) => {
+EventsOn("wails:drop", (x, y, paths) => {
     console.log("DROP EVENT FIRED");
     console.log("Dropped files at: ", x, y);
     console.log("File paths: ", paths)
@@ -204,6 +204,34 @@ EventsOn("wails:file-drop", (x, y, paths) => {
     }
 })
 
+
+/*
+document.addEventListener("drop", (event) => {
+    event.preventDefault();
+
+    const folderPaths = [];
+
+    for (const item of event.dataTransfer.items) {
+        const entry = item.webkitGetAsEntry();
+        console.log(entry)
+        if (entry && entry.isDirectory) {
+            folderPaths.push(entry.fullPath || entry.name);
+        } else if (entry && entry.isFile) {
+            // Optional: if you also want top-level files
+            // folderPaths.push(item.getAsFile().path);
+            folderPaths.push(entry.fullPath || entry.name)
+        }
+    }
+
+    if (folderPaths.length > 0) {
+        console.log("Top-level folders dropped:", folderPaths);
+        handleFileSelection(folderPaths); // send to Wails backend
+    }
+});
+
+ */
+
+document.addEventListener("dragover", (event) => event.preventDefault());
 
 
 function showConnectionError(message) {
@@ -234,7 +262,7 @@ function getFileName(path) {
     return path.split(/[/\\]/).pop();
 }
 
-function handleFileSelection(paths) {
+export function handleFileSelection(paths) {
     if (paths.length === 0) {
         resetFileSelection();
         return;
