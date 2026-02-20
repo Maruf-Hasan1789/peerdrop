@@ -38,31 +38,30 @@ function showPermissionPopup(sender) {
     };
 
     fileList.innerHTML = "";
-    partialButton.disabled = true; // Disable until a selection is made
+    partialButton.disabled = true;
     modal.querySelector(".message").textContent =
-        `${sender.user_name} wants to send you the following files:`;
+        `${sender.user_name} wants to send you these files:`;
 
-    // --- RENDER FILE LIST ---
     sender.files.forEach(file => {
-        // Ensure we have a valid ID (fallback if name varies)
-        const fileID = file.id
-
+        const fileID = file.id;
         const li = document.createElement("li");
-        li.style.cssText = "display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px;";
+        li.className = "pm-file-item";
 
-        const info = document.createElement("span");
         const sizeMB = file.file_size / (1024 * 1024);
-        info.textContent = `File: ${file.file_name} | Size: ${decimalNumberFormatter.format(sizeMB)} MB`;
+        const info = document.createElement("span");
+        info.className = "pm-file-info";
+        info.textContent = `${file.file_name} · ${decimalNumberFormatter.format(sizeMB)} MB`;
 
         const btnBox = document.createElement("div");
-        btnBox.style.display = "flex";
-        btnBox.style.gap = "6px";
+        btnBox.className = "pm-file-actions";
 
         const allowBtn = document.createElement("button");
+        allowBtn.type = "button";
         allowBtn.textContent = "Allow";
         allowBtn.className = "btn-allow";
 
         const denyBtn = document.createElement("button");
+        denyBtn.type = "button";
         denyBtn.textContent = "Deny";
         denyBtn.className = "btn-deny";
 
