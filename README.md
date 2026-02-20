@@ -3,8 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-green)](https://golang.org)
 [![Wails](https://img.shields.io/badge/Wails-v2-blueviolet)](https://wails.io)
-
-**PeerDrop** is a fast, peer-to-peer file transfer tool for local networks, built for developers and QA engineers.  
+[![Latest Pre-Release](https://img.shields.io/github/v/release/Maruf-Hasan1789/peerdrop?include_prereleases)](https://github.com/Maruf-Hasan1789/peerdrop/releases)
+**PeerDrop** is a fast, peer-to-peer file transfer tool for local networks, built for everyone who needs fast and easy file transfers.  
 No cloud. No servers. Just direct LAN transfers using **mDNS** for peer discovery.
 
 ---
@@ -18,7 +18,7 @@ PeerDrop allows you to:
 - Avoid USB drives and cloud uploads
 - Share builds, logs, and test artifacts instantly
 
-Designed for: **developers, QA engineers, and local office environments**.
+Designed for **everyone** who needs fast, easy LAN file transfers.
 
 ---
 
