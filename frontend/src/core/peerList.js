@@ -4,6 +4,7 @@ import {cancelTransfer, clearReceiverSelection, ongoingTransfers, receiverSelect
 
 const peerListEl = document.getElementById("peer-list");
 const activePeerCount = document.getElementById("active-peer-count");
+const peerListEmpty = document.getElementById("peer-list-empty");
 const refreshBtn = document.getElementById("refresh-connected-peer-btn");
 
 EventsOn("peer-connected", (peer) => {
@@ -34,6 +35,12 @@ EventsOn("peer-disconnected", async (peer) => {
 // Local Map to store peers
 const peersMap = new Map();
 
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Fetch peers from backend
 export async function fetchPeers() {
     try {
@@ -56,29 +63,31 @@ export function updatePeerListUI() {
     peerListEl.innerHTML = '';
 
     peersMap.forEach(peer => {
-        // --- Right sidebar list ---
         const li = document.createElement("li");
-        //li.textContent = `${peer.name} (${peer.id}) - Port: ${peer.port}`;
         li.classList.add("peer-item");
         li.dataset.peerId = peer.id;
 
-        console.log("Peer " + peer.id, peer.name, peer.user_name)
+        li.innerHTML = `
+            <div class="peer-avatar" aria-hidden="true">
+                <span class="material-symbols-outlined">person</span>
+            </div>
+            <div class="peer-info">
+                <span class="peer-name">${escapeHtml(peer.user_name || 'Peer')}</span>
+                <span class="peer-meta">Port ${peer.port}</span>
+            </div>
+        `;
 
-        li.innerHTML = `<strong>${peer.user_name}</strong><br>
-                        <small>Port ${peer.port}</small>`
-
-        // Click to highlight in sidebar
         li.addEventListener("click", () => {
             document.querySelectorAll("#peer-list li").forEach(el => el.classList.remove("selected"));
             li.classList.add("selected");
-
-            renderSelectedPeer(peer)
+            renderSelectedPeer(peer);
         });
 
         peerListEl.appendChild(li);
     });
 
-    activePeerCount.textContent = peersMap.size.toString();
+    if (activePeerCount) activePeerCount.textContent = peersMap.size.toString();
+    if (peerListEmpty) peerListEmpty.hidden = peersMap.size > 0;
 }
 
 function renderSelectedPeer(peer) {

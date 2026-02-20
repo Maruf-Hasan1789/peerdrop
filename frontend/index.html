@@ -14,9 +14,12 @@
 <header class="main-header">
     <div class="header-left">
         <div class="app-icon-wrapper">
-            <span class="material-symbols-outlined app-icon">file_upload</span>
+            <span class="material-symbols-outlined app-icon">send</span>
         </div>
-        <span class="app-name">PeerDrop</span>
+        <div class="app-brand">
+            <span class="app-name">PeerDrop</span>
+            <span class="app-tagline">Send files to peers</span>
+        </div>
     </div>
     <div class="header-actions">
         <button class="icon-btn" id="history-toggle" title="Transfer History" aria-label="Transfer History">
@@ -93,25 +96,20 @@
                     </div>
                 </div>
 
-                <!-- File Info Bar -->
+                <!-- File Info Bar: list fills space, buttons at bottom -->
                 <div id="file-info-bar" class="file-info-bar" style="display: none">
                     <div class="file-details">
-
-                        <!-- LEFT: Vertical file list -->
-                        <div id="selectedFileListContainer"></div>
-
-                        <!-- RIGHT: Buttons -->
+                        <div id="selectedFileListContainer" class="file-list-scroll"></div>
                         <div class="file-actions">
-                            <button id="clear-file" class="icon-btn-small">
-                                <span class="material-symbols-outlined">close</span>
+                            <button id="clear-file" class="file-action-btn file-action-clear" type="button" aria-label="Clear selection">
+                                <span class="material-symbols-outlined">delete_sweep</span>
+                                <span>Clear</span>
                             </button>
-
-                            <button id="send-btn" class="send-btn" disabled>
+                            <button id="send-btn" class="file-action-btn file-action-send send-btn" type="button" disabled>
                                 <span class="material-symbols-outlined">send</span>
                                 <span>Send All</span>
                             </button>
                         </div>
-
                     </div>
                 </div>
             </section>
@@ -120,7 +118,10 @@
             <section class="transfers-section">
                 <div class="section-header">
                     <h2 class="section-title">Sending</h2>
-                    <span id="send-file-count" class="transfer-badge">0</span>
+                    <div class="transfer-count-badge transfer-count-send" aria-label="Active sends">
+                        <span class="material-symbols-outlined transfer-count-icon">upload</span>
+                        <span id="send-file-count" class="transfer-count-num">0</span>
+                    </div>
                 </div>
                 <div id="transfer-list" class="transfer-list">
                     <!-- transfer cards will be dynamically inserted here -->
@@ -131,7 +132,10 @@
             <section class="transfers-section" style="margin-top: 2rem;">
                 <div class="section-header">
                     <h2 class="section-title">Receiving</h2>
-                    <span id="receive-count" class="transfer-badge">0</span>
+                    <div class="transfer-count-badge transfer-count-receive" aria-label="Active receives">
+                        <span class="material-symbols-outlined transfer-count-icon">download</span>
+                        <span id="receive-count" class="transfer-count-num">0</span>
+                    </div>
                 </div>
                 <div id="receive-list" class="transfer-list">
                     <!-- Receive cards will be dynamically inserted here -->
@@ -141,18 +145,29 @@
 
         <!-- Sidebar (30%) -->
         <aside id="sidebar-column" class="sidebar-column">
-            <div class="sidebar-header">
-                <div>
-                    <h3 class="sidebar-title">Connected Peers</h3>
-                    <p class="sidebar-subtitle" id="active-peer-count">0 online</p>
+            <header class="sidebar-header">
+                <div class="sidebar-header-top">
+                    <div class="sidebar-title-row">
+                        <span class="material-symbols-outlined sidebar-title-icon">group</span>
+                        <h3 class="sidebar-title">Connected Peers</h3>
+                    </div>
+                    <div class="sidebar-header-meta">
+                        <span class="sidebar-count-badge" aria-label="Peers online">
+                            <span class="material-symbols-outlined sidebar-count-icon">wifi</span>
+                            <span id="active-peer-count" class="sidebar-count-num">0</span>
+                        </span>
+                        <button id="refresh-connected-peer-btn" class="sidebar-refresh-btn" aria-label="Refresh peers">
+                            <span class="material-symbols-outlined">sync</span>
+                        </button>
+                    </div>
                 </div>
-                <button id="refresh-connected-peer-btn" class="refresh-btn" aria-label="Refresh peers">
-                    <span class="material-symbols-outlined">sync</span>
-                </button>
+            </header>
+            <div class="peer-list-wrapper">
+                <ul id="peer-list" class="peer-list">
+                    <!-- Peer items will be dynamically inserted here -->
+                </ul>
+                <p id="peer-list-empty" class="peer-list-empty" aria-live="polite">No peers connected. They’ll appear here when available.</p>
             </div>
-            <ul id="peer-list" class="peer-list">
-                <!-- Peer items will be dynamically inserted here -->
-            </ul>
         </aside>
     </div>
 </main>
@@ -223,40 +238,50 @@
                 <!-- About Section -->
                 <div id="settings-about" class="settings-section">
                     <div id="aboutPage" class="about-container">
+                        <div class="about-hero">
+                            <div class="about-logo">
+                                <span class="material-symbols-outlined about-logo-icon">send</span>
+                            </div>
+                            <h2 class="about-app-name">PeerDrop</h2>
+                            <span id="aboutVersion" class="about-version">Version 0.1.0</span>
+                        </div>
 
-                        <h3 class="about-title">Peerdrop</h3>
-
-                        <p id="aboutVersion">Version: 0.1.0</p>
-                        <p id="aboutAuthor">
-                            Developed by:
-                            <a href="https://www.linkedin.com/in/marufhasan1789/" target="_blank" class="author-link">
-                                Maruf Hasan
-                            </a>
-                        </p>
-                        <p id="aboutProductDesigner">
-                            Product Designed By:
-                            <a href="https://www.linkedin.com/in/sharior/" target="_blank" class="author-link">
-                                Farhan Sharior
-                            </a>
-                        </p>
-
-                        <p id="aboutDescription">
+                        <p id="aboutDescription" class="about-description">
                             This app began as a spark of an idea from Farhan and was crafted into reality by Maruf.
                         </p>
 
-                        <p class="about-quote">
-                            <em>À Mikasa — La vie en rose, toujours.</em>
-                        </p>
-
-                        <div class="about-links">
-                            <a href="https://github.com/Maruf-Hasan1789/peerdrop" id="aboutGithub" target="_blank" class="about-link">
-                                GitHub Repository
-                            </a><br>
-                            <a href="mailto:marufhasan212@gmail.com" id="aboutSupport" class="about-link">
-                                Contact Support
-                            </a>
+                        <div class="about-team">
+                            <div class="about-team-card">
+                                <span class="material-symbols-outlined about-team-icon">code</span>
+                                <div class="about-team-info">
+                                    <span class="about-team-label">Developed by</span>
+                                    <a href="https://www.linkedin.com/in/marufhasan1789/" id="aboutAuthor" target="_blank" class="about-team-link">Maruf Hasan</a>
+                                </div>
+                            </div>
+                            <div class="about-team-card">
+                                <span class="material-symbols-outlined about-team-icon">palette</span>
+                                <div class="about-team-info">
+                                    <span class="about-team-label">Product design</span>
+                                    <a href="https://www.linkedin.com/in/sharior/" id="aboutProductDesigner" target="_blank" class="about-team-link">Sharior Farhan</a>
+                                </div>
+                            </div>
                         </div>
 
+                        <blockquote class="about-quote">
+                            <span class="material-symbols-outlined about-quote-icon">format_quote</span>
+                            <p>À Mikasa — La vie en rose, toujours.</p>
+                        </blockquote>
+
+                        <div class="about-actions">
+                            <a href="https://github.com/Maruf-Hasan1789/peerdrop" id="aboutGithub" target="_blank" class="about-action-btn">
+                                <span class="material-symbols-outlined">code</span>
+                                <span>GitHub</span>
+                            </a>
+                            <a href="mailto:marufhasan212@gmail.com" id="aboutSupport" class="about-action-btn">
+                                <span class="material-symbols-outlined">mail</span>
+                                <span>Contact Support</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -270,33 +295,43 @@
     </div>
 </div>
 
-<!-- transfer History Modal -->
+<!-- Transfer History Modal -->
 <div id="transfer-history-modal" class="modal-overlay">
     <div class="modal-container history-modal">
-        <div class="modal-header">
-            <div>
-                <h2 class="modal-title">Transfer History</h2>
-                <p class="modal-subtitle">Manage and view your past file activities</p>
+        <header class="history-header">
+            <div class="history-header-top">
+                <div class="history-title-row">
+                    <div class="history-header-icon">
+                        <span class="material-symbols-outlined">history</span>
+                    </div>
+                    <div>
+                        <h2 class="history-title">Transfer History</h2>
+                        <p class="history-subtitle">Past sends and receives</p>
+                    </div>
+                </div>
+                <div class="history-header-actions">
+                    <button id="clear-history-btn" class="history-clear-btn" aria-label="Clear history">
+                        <span class="material-symbols-outlined">delete_sweep</span>
+                        <span>Clear</span>
+                    </button>
+                    <button type="button" class="history-close-btn" id="close-transfer-history" aria-label="Close">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
             </div>
-            <button id="clear-history-btn" class="clear-history-btn" aria-label="Clear history">
-                <span class="material-symbols-outlined">delete_sweep</span>
-                <span>Clear History</span>
-            </button>
-        </div>
+        </header>
         <div class="history-content">
-            <div class="history-search">
-                <span class="material-symbols-outlined search-icon">search</span>
+            <div class="history-search-wrap">
+                <span class="material-symbols-outlined history-search-icon">search</span>
                 <input type="text" id="history-search" class="history-search-input"
-                       placeholder="Search history by filename or peer...">
+                       placeholder="Search by filename or peer...">
             </div>
             <div class="history-list-container">
                 <ul id="transfer-history-list" class="history-list">
-                    <!-- History items will be dynamically inserted here -->
+                    <!-- History items inserted by state.js -->
                 </ul>
+                <p class="history-empty" id="history-empty-msg">No transfer history yet.</p>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="close-transfer-history">Close</button>
         </div>
     </div>
 </div>

@@ -131,33 +131,43 @@ function updateProgress(id, progress) {
     }
 }
 
-sendFileButton.addEventListener("click", async (event) => {
-    event.preventDefault();
-    try {
-        // Open native file dialog via Go
-        console.log("filePath", filePath);
-        if (filePath.size === 0 || receiverSelect.value === "") {
-            alert("Receiver is not provided");
-            //console.error("File Path is not provided")
-            return
-        }
+function initSendButton() {
+    const btn = document.getElementById("send-btn");
+    if (!btn) return;
+    btn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+            if (receiverSelect.value === "") {
+                showToast("Select a peer", "Select a peer from the sidebar first.");
+                return;
+            }
+            if (filePath.size === 0) {
+                showToast("No files", "Add files to send first.");
+                return;
+            }
 
-        console.log("receiver ", receiverSelect.value, "filePath ", filePath);
-        // Send file to selected peer
-        const receiverId = receiverSelect.value;
-        SendFileToPeer(receiverId, Array.from(filePath)).then(() => {
-            console.log("File sent successfully");
-        }).catch(err => {
+            const receiverId = receiverSelect.value;
+            const paths = Array.from(filePath).filter(p => typeof p === "string" && p.trim().length > 0);
+            if (paths.length === 0) {
+                showToast("Invalid paths", "No valid file paths to send.");
+                return;
+            }
+
+            await SendFileToPeer(receiverId, paths);
+            resetFileSelection();
+        } catch (err) {
+            console.error("Error while sending file:", err);
             showConnectionError("Connection lost! File transfer failed.");
-            console.error("Error while sending the file", err);
-        });
-        resetFileSelection();
-        //console.log("File sent:", filePath);
-    } catch (err) {
-        console.error("Error while sending file:", err);
-        showConnectionError("Connection lost! File transfer failed.");
-    }
-});
+        }
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSendButton);
+} else {
+    initSendButton();
+}
 
 
 function updateTransferCount() {
@@ -294,13 +304,18 @@ function renderSelectedFiles(filePath) {
         const div = document.createElement("div");
         div.classList.add("file-item");
 
-        div.innerHTML = `<span class="file-index">${i + 1}.</span>
+        div.innerHTML = `<span class="file-index" aria-label="File ${i + 1}">
+                            <span class="file-index-num">${i + 1}</span>
+                        </span>
                         <span class="file-name">${getFileName(file)}</span>
-                        <div class="file-actions">
-                        <button class="remove-btn"> Remove</button>
+                        <div class="file-item-actions">
+                            <button type="button" class="remove-btn" aria-label="Remove file">
+                                <span class="material-symbols-outlined">close</span>
+                                <span>Remove</span>
+                            </button>
                         </div>`
 
-        div.querySelector(".remove-btn").addEventListener('click', () => {
+        div.querySelector(".remove-btn").addEventListener("click", () => {
             div.remove();
             filePath.delete(file);
             updateUploadFileButtons();
@@ -313,8 +328,12 @@ function renderSelectedFiles(filePath) {
 }
 
 function updateUploadFileButtons() {
-    if(filePath.size === 0) {
+    if (filePath.size === 0) {
         sendFileButton.disabled = true;
+        if (dropZone) dropZone.style.display = 'flex';
+        if (fileInfoBar) fileInfoBar.style.display = 'none';
+    } else {
+        sendFileButton.disabled = false;
     }
 }
 

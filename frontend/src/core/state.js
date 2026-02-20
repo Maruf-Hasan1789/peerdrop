@@ -14,29 +14,39 @@ async function loadTransferHistory() {
 
     const transferHistories = await GetTransferHistories();
     //console.log("Sent File Histories", transferHistories);
+    const emptyEl = document.getElementById("history-empty-msg");
+    if (emptyEl) emptyEl.hidden = transferHistories.length > 0;
+
     transferHistories.forEach(transferredFile => {
         const li = document.createElement("li");
         li.classList.add("history-item");
+        const isSuccess = (transferredFile.status || "").toUpperCase() === "COMPLETED";
+        const statusClass = isSuccess ? "success" : "failed";
+        const typeLabel = (transferredFile.transfer_type || "").toUpperCase() === "SENT" ? "Sent" : "Received";
 
         li.innerHTML = `
-            <div class="history-main">
-                <span class="history-filename">${transferredFile.file_name}</span>
-                <span class="history-status">${transferredFile.status}</span>
-                <span class="history-transfer-type">${transferredFile.transfer_type}</span>
+            <div class="history-file-icon">
+                <span class="material-symbols-outlined">description</span>
             </div>
-        
+            <div class="history-main">
+                <span class="history-filename">${escapeHtml(transferredFile.file_name || "—")}</span>
+                <span class="history-transfer-type">${typeLabel}</span>
+                <span class="history-status ${statusClass}">${transferredFile.status || "—"}</span>
+            </div>
             <div class="history-meta">
-                <span class="history-receiver">
-                    to: ${transferredFile.peer}
-                </span>
-                <span class="history-time">
-                    ${formatTimestamp(transferredFile.time_stamp)}
-                </span>
+                <span class="history-receiver">${escapeHtml(transferredFile.peer || "—")}</span>
+                <span class="history-time">${formatTimestamp(transferredFile.time_stamp)}</span>
             </div>
         `;
 
         TransferHistoryList.append(li);
     });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function formatTimestamp(unixMilliSeconds) {
@@ -68,6 +78,8 @@ closeTransferHistoryModal.addEventListener("click", () => {
 clearHistoryBtn.addEventListener("click", async () => {
     try {
         TransferHistoryList.innerHTML = "";
+        const emptyEl = document.getElementById("history-empty-msg");
+        if (emptyEl) emptyEl.hidden = false;
         await ClearTransferHistory();
     } catch (e) {
         console.log("Error while clearing transfer histories")
