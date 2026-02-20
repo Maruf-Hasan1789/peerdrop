@@ -339,21 +339,34 @@
 <!-- Permission Request Modal -->
 <div id="permission-modal" class="modal-overlay">
     <div class="modal-container permission-modal">
-        <div class="modal-header">
-            <h2 class="modal-title">File Transfer Request</h2>
-        </div>
-        <div class="modal-content">
-            <p class="message" style="margin-bottom: 1rem; color: var(--text-secondary);"></p>
-            <ul class="pm-files"
-                style="list-style: none; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                <!-- Files list -->
+        <header class="permission-header">
+            <div class="permission-header-icon">
+                <span class="material-symbols-outlined">inbox</span>
+            </div>
+            <div>
+                <h2 class="permission-title">File transfer request</h2>
+                <p class="permission-message message"></p>
+            </div>
+        </header>
+        <div class="permission-content">
+            <ul class="pm-files">
+                <!-- File rows inserted by receiver.js -->
             </ul>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="deny-btn">Deny</button>
-            <button class="btn btn-primary" id="allow-btn">Accept</button>
-            <button class="btn btn-primary" id="partial-permission-btn">Accept Selected Ones</button>
-        </div>
+        <footer class="permission-footer">
+            <button type="button" class="permission-btn permission-deny" id="deny-btn">
+                <span class="material-symbols-outlined">block</span>
+                <span>Deny</span>
+            </button>
+            <button type="button" class="permission-btn permission-partial" id="partial-permission-btn" disabled>
+                <span class="material-symbols-outlined">checklist</span>
+                <span>Accept selected</span>
+            </button>
+            <button type="button" class="permission-btn permission-allow" id="allow-btn">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>Accept all</span>
+            </button>
+        </footer>
     </div>
 </div>
 
