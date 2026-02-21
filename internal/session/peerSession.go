@@ -16,6 +16,7 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
+	transport2 "github.com/Maruf-Hasan1789/peerdrop/internal/transport"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -41,6 +42,7 @@ type PeerSession struct {
 	cancel context.CancelFunc
 	conn   transport.Connection
 	peer   discovery.Peer
+	config transport2.SessionConfig
 
 	done chan struct{}
 
@@ -80,7 +82,7 @@ type RootProgress struct {
 	mu               sync.Mutex
 }
 
-func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession {
+func NewPeerSession(ctx context.Context, conn transport.Connection, config transport2.SessionConfig) *PeerSession {
 	ctx, cancel := context.WithCancel(ctx)
 	p := &PeerSession{
 		ID:                     uuid.NewString(),
@@ -88,6 +90,7 @@ func NewPeerSession(ctx context.Context, conn transport.Connection) *PeerSession
 		cancel:                 cancel,
 		conn:                   conn,
 		peer:                   conn.PeerInfo(),
+		config:                 config,
 		done:                   make(chan struct{}),
 		connectedAt:            time.Now(),
 		handlers:               make(map[protocol.MessageType]func(msg protocol.Message, downloadPath string)),
@@ -252,7 +255,7 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 		}
 	}
 
-	err := p.SendHandshakesForFiles(rootEntries, 1024*1024, transferId)
+	err := p.SendHandshakesForFiles(rootEntries, transferId)
 
 	if err != nil {
 		log.Printf("Error sending handshake for files: %v\n", err)
@@ -277,7 +280,7 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 			for _, rootEntry := range rootEntries {
 				//	wg.Add(1)
 				rootPath := p.rootPaths[rootEntry.ID]
-				go p.SendRootEntry(transferId, rootEntry, rootPath, 1024*1024)
+				go p.SendRootEntry(transferId, rootEntry, rootPath)
 			}
 		} else {
 			log.Printf("Partial Permission is allowed\n")
@@ -302,7 +305,7 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 				}
 
 				rootPath := p.rootPaths[rootEntry.ID]
-				go p.SendRootEntry(transferId, rootEntry, rootPath, 1024*1024)
+				go p.SendRootEntry(transferId, rootEntry, rootPath)
 			}
 
 			//wg.Wait()
@@ -315,9 +318,9 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 	return nil
 }
 
-func (p *PeerSession) SendRootEntry(transferId string, rootEntry *protocol.RootEntry, rootPath string, chunkSize int) {
+func (p *PeerSession) SendRootEntry(transferId string, rootEntry *protocol.RootEntry, rootPath string) {
 	for _, file := range rootEntry.Files {
-		err := p.Sendfile(transferId, file, rootPath, rootEntry, chunkSize)
+		err := p.Sendfile(transferId, file, rootPath, rootEntry)
 		if err != nil {
 			log.Printf("Error sending file %v error : %v\n", file.Path, err)
 			return
@@ -325,7 +328,7 @@ func (p *PeerSession) SendRootEntry(transferId string, rootEntry *protocol.RootE
 	}
 }
 
-func (p *PeerSession) SendHandshakesForFiles(rootEntries []*protocol.RootEntry, chunkSize int, transferId string) error {
+func (p *PeerSession) SendHandshakesForFiles(rootEntries []*protocol.RootEntry, transferId string) error {
 
 	fileOffer := protocol.Message{
 		Version:   protocol.ProtocolVersion,
@@ -342,14 +345,14 @@ func (p *PeerSession) SendHandshakesForFiles(rootEntries []*protocol.RootEntry, 
 
 	fileOffer.Handshake.Roots = rootEntries
 	fileOffer.Handshake.TotalSize = totalSize
-	fileOffer.Handshake.ChunkSize = chunkSize
+	fileOffer.Handshake.ChunkSize = p.config.ChunkSize
 
 	err := p.Send(fileOffer)
 
 	return err
 }
 
-func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, rootPath string, rootEntry *protocol.RootEntry, chunkSize int) error {
+func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, rootPath string, rootEntry *protocol.RootEntry) error {
 	peerId := p.peer.ID
 	filePath := rootPath
 
@@ -373,6 +376,8 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta protocol.FileMeta, ro
 	defer f.Close()
 
 	fi, _ := f.Stat()
+
+	chunkSize := p.config.ChunkSize
 
 	totalChunks := int((fi.Size() + int64(chunkSize) - 1) / int64(chunkSize))
 

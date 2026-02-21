@@ -9,18 +9,16 @@ import (
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
+	transport2 "github.com/Maruf-Hasan1789/peerdrop/internal/transport"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const (
-	ChunkSize = 1024 * 1024
-)
-
 func (a *App) HandleConnection(conn transport.Connection) {
 	defer conn.Close()
-	peerSession := session.NewPeerSession(a.ctx, conn)
+	config := transport2.DefaultConfig()
+	peerSession := session.NewPeerSession(a.ctx, conn, config)
 
 	peerSession.OnFileReceived(func(peerId string, rootId string, rootName string) {
 		log.Printf("File received in HandleConnection %v\n", rootName)
