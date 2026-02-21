@@ -121,13 +121,18 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 
 	*/
 
-	conn.peer = discovery.Peer{
-		ID:        remoteHello.ID,
-		Name:      remoteHello.Name,
-		Addresses: conn.peer.Addresses,
-		Port:      remoteHello.Port,
-		Version:   remoteHello.Version,
+	remotePeer := discovery.Peer{
+		ID:      remoteHello.ID,
+		Name:    remoteHello.Name,
+		Port:    remoteHello.Port,
+		Version: remoteHello.Version,
 	}
+
+	conn.peer = remotePeer
+
+	log.Printf("Connected to %v\n", remotePeer)
+
+	log.Printf("Connection peer %v", conn.peer)
 
 	return nil
 }

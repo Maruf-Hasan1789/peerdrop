@@ -98,7 +98,7 @@ func main() {
 	}
 	transferRegistry := transfer.NewRegistry()
 
-	wailsApp = app.NewApp(d, transferRegistry)
+	wailsApp = app.NewApp(d, transferRegistry, selfPeer)
 	d.AddObserver(wailsApp)
 
 	//permissionManager := app.NewPermissionManager(settings)
