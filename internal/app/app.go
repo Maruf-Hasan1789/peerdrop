@@ -12,6 +12,7 @@ import (
 	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
+	transport2 "github.com/Maruf-Hasan1789/peerdrop/internal/transport"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
@@ -244,8 +245,10 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)
 		}
+		config := transport2.DefaultConfig()
 
-		selectedPeerSession = session.NewPeerSession(a.ctx, conn)
+		selectedPeerSession = session.NewPeerSession(a.ctx, conn, config)
+
 		selectedPeerSession.Start(a.settings.DownloadPath)
 		log.Printf("Here before registering session\n")
 		a.RegisterSession(selectedPeerSession)
