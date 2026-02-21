@@ -11,7 +11,7 @@ import (
 
 type Dialer struct{}
 
-func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection, error) {
+func (dialer *Dialer) Dial(ctx context.Context, peer discovery.Peer, selfPeer *discovery.Peer) (Connection, error) {
 
 	fmt.Printf("dialed peer %v %v\n", peer.Addresses[0], peer.Port)
 
@@ -29,50 +29,7 @@ func (dialer *Dialer) Dial(peer discovery.Peer, ctx context.Context) (Connection
 		role: outbound,
 	}
 
-	/*fileInfo, err := os.Stat(actualFilePath)
-	if err != nil {
-		log.Printf("Error getting file stats %v\n", err)
-		return nil, err
-	}
-
-	fmt.Println(fileInfo)
-	hash := sha256.New()
-
-	file, err := os.Open(actualFilePath)
-
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Printf("Error closing file %v\n", err)
-		}
-	}(file)
-
-	if err != nil {
-		log.Printf("Error opening file %v\n", err)
-		return nil, err
-	}
-
-	if _, err := io.Copy(hash, file); err != nil {
-		log.Printf("Error reading file %v\n", err)
-		return nil, err
-	}
-
-	/*checkSum := hash.Sum(nil)
-
-	/*handshakeOptions := protocol.HandshakeOptions{
-		SendOptions: protocol.SendOptions{
-			Files: []domain.FileMetadata{
-				{
-					ID:       strconv.FormatInt(time.Now().UnixMilli(), 10),
-					FileName: filepath.Base(actualFilePath),
-					FileSize: fileInfo.Size() / 1024,
-					Checksum: fmt.Sprintf("%x", checkSum),
-				},
-			},
-		},
-	}
-	*/
-	if err := handshake(ctx, tcpConnection, &peer); err != nil {
+	if err := handshake(ctx, tcpConnection, selfPeer); err != nil {
 		return nil, err
 	}
 

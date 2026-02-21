@@ -67,6 +67,8 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				}
 			}
 
+			log.Printf("Peer Info %v\n", peer)
+
 			a.discovery.RemovePeerById(peer.ID)
 
 			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{

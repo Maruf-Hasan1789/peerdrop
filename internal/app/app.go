@@ -26,6 +26,7 @@ type App struct {
 	transferRegistry   *transfer.Registry
 	pendingPermissions map[string]pendingPermission
 	mu                 sync.Mutex
+	selfPeer           *discovery.Peer
 }
 
 type pendingPermission struct {
@@ -37,11 +38,12 @@ type FileReceivePermissionResponse struct {
 	Files map[string]bool         `json:"files"`
 }
 
-func NewApp(d *discovery.Discovery, registry *transfer.Registry) *App {
+func NewApp(d *discovery.Discovery, registry *transfer.Registry, selfPeer *discovery.Peer) *App {
 	return &App{
 		discovery:          d,
 		transferRegistry:   registry,
 		pendingPermissions: make(map[string]pendingPermission),
+		selfPeer:           selfPeer,
 	}
 }
 
@@ -79,7 +81,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 		log.Printf("Here in disconnect app.go line 74\n")
 		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
-			//a.discovery.RemovePeerById(peer.ID)
+			a.discovery.RemovePeerById(peer.ID)
 
 			runtime.EventsEmit(a.ctx, "peer-disconnected", map[string]interface{}{
 				"user_name": peer.UserName,
@@ -236,7 +238,8 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 		log.Printf("Peer %v is selected by peer %v\n", peerId, peerInfo.Name)
 
 		dialer := &transport.Dialer{}
-		conn, err := dialer.Dial(*peerInfo, a.ctx)
+
+		conn, err := dialer.Dial(a.ctx, *peerInfo, a.selfPeer)
 
 		if err != nil {
 			return fmt.Errorf("peer %v dial error: %v", peerId, err)

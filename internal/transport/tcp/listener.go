@@ -39,7 +39,15 @@ func (listener *Listener) Accept(ctx context.Context, selfPeer *discovery.Peer) 
 
 	err = handshake(ctx, tcpConnection, selfPeer)
 
-	return NewTCPConnection(conn, *selfPeer, inbound), nil
+	if err != nil {
+		log.Printf("Error while handshake from %v\n", err)
+		err = tcpConnection.Close()
+		return nil, err
+	}
+
+	log.Printf("Connection PeerInfo %v", tcpConnection.PeerInfo())
+
+	return NewTCPConnection(conn, tcpConnection.peer, inbound), nil
 }
 
 func (listener *Listener) GetPort() int {
