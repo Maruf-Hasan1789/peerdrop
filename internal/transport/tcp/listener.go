@@ -2,7 +2,6 @@ package transport
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
@@ -13,14 +12,11 @@ type Listener struct {
 	listener net.Listener
 }
 
-func NewListener(selfPeer *discovery.Peer) (*Listener, error) {
-	address := fmt.Sprintf(":%v", selfPeer.Port)
-
-	listener, err := net.Listen("tcp", address)
+func NewListener() (*Listener, error) {
+	listener, err := net.Listen("tcp", ":0")
 
 	if err != nil {
 		log.Printf("Couldn't listen to tcp %v\n", err.Error())
-
 		return nil, err
 	}
 
@@ -44,4 +40,12 @@ func (listener *Listener) Accept(ctx context.Context, selfPeer *discovery.Peer) 
 	err = handshake(ctx, tcpConnection, selfPeer)
 
 	return NewTCPConnection(conn, *selfPeer, inbound), nil
+}
+
+func (listener *Listener) GetPort() int {
+	if listener.listener == nil {
+		return -1
+	}
+
+	return listener.listener.Addr().(*net.TCPAddr).Port
 }
