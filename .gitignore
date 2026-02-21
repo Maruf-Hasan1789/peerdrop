@@ -39,3 +39,4 @@ frontend/dist/
 # Ignore Wails frontend Go bindings
 frontend/wailsjs/go/
 frontend/wailsjs/runtime
+frontend/package.json.md5

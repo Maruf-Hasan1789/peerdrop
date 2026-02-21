@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"embed"
-	"flag"
 	"log"
-	"os"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
@@ -22,17 +20,23 @@ var wailsApp *app.App
 var assets embed.FS
 
 func main() {
-	port := flag.Int("port", 6623, "port")
-	flag.Parse()
-	log.Printf("Os Args %s", os.Args)
-	log.Printf("Port %v\n", *port)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	selfPeer := discovery.GetSelfPeer(*port)
+	listener, err := transport.NewListener()
 
-	listener, err := transport.NewListener(selfPeer)
+	if err != nil {
+		log.Fatal("Error while creating listener ", err)
+	}
+
+	port := listener.GetPort()
+
+	if port == -1 {
+		log.Fatal("Error while creating listener port ", port)
+	}
+
+	selfPeer := discovery.GetSelfPeer(port)
 
 	d := discovery.New()
 
@@ -138,6 +142,6 @@ func main() {
 		cancel()
 	}
 
-	log.Printf("Listening on port %v\n", *port)
+	log.Printf("Listening on port %v\n", port)
 
 }
