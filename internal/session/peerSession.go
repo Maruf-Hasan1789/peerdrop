@@ -68,7 +68,7 @@ type PeerSession struct {
 	mu                     sync.Mutex
 	activeTransfers        map[string]context.CancelFunc
 
-	rootPaths             map[string]string
+	RootPaths             map[string]string
 	rootEntries           map[string]*protocol.RootEntry
 	rootReceivingProgress map[string]*RootProgress
 	rootSendingProgress   map[string]*RootProgress
@@ -245,9 +245,8 @@ type FileResult struct {
 	Error    error
 }
 
-func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
+func (p *PeerSession) SendToPeer(transferId string, rootEntries []*protocol.RootEntry) error {
 	permCh := p.waitForPermission(transferId)
-	rootEntries := p.getRootEntriesFromFilePaths(filePaths)
 
 	for _, rootEntry := range rootEntries {
 		for _, file := range rootEntry.Files {
@@ -692,13 +691,6 @@ func (p *PeerSession) waitForPermission(transferId string) <-chan *protocol.Cont
 	return ch
 }
 
-func showFileResults(ch chan FileResult) {
-	log.Printf("Showing file results")
-	for fileResult := range ch {
-		log.Printf("Showing file results %v", fileResult)
-	}
-}
-
 func (p *PeerSession) getRootEntriesFromFilePaths(paths []string) []*protocol.RootEntry {
 	var rootEntries []*protocol.RootEntry
 	for _, path := range paths {
@@ -717,6 +709,10 @@ func (p *PeerSession) getRootEntriesFromFilePaths(paths []string) []*protocol.Ro
 	}
 
 	return rootEntries
+}
+
+func (p *PeerSession) CancelTransfer(transferId string, rootId string) {
+
 }
 
 func getRootEntryFromPath(path string) (*protocol.RootEntry, error) {

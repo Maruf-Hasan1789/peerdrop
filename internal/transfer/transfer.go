@@ -15,6 +15,7 @@ const (
 	Rejected
 	InProgress
 	Paused
+	Canceled
 	Completed
 	Failed
 )

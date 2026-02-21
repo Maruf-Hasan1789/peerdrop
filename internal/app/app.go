@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -101,7 +102,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	p.OnTransferStart(func(peerId string, transferId string, rootId string, rootName string) {
 		//log.Printf("Transfer Started \n")
 		//need to update the transferred bytes and totalbytes in future
-		a.transferRegistry.AddTransferredFile(a.ctx, peerId, transferId, rootId, rootName, transfer.InProgress, 0, 0, transfer.Outgoing)
+		//a.transferRegistry.AddTransferredFile(a.ctx, peerId, transferId, rootId, rootName, transfer.InProgress, 0, 0, transfer.Outgoing)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "transfer-start", map[string]string{
 				"id":         rootId,
@@ -265,7 +266,10 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []s
 
 	peerId := peerSession.GetPeerInfo().ID
 	startingTime := time.Now()
-	err := peerSession.SendToPeer(transferId, filePaths)
+
+	rootEntries := a.getRootEntriesFromFilePaths(peerSession, transferId, filePaths)
+
+	err := peerSession.SendToPeer(transferId, rootEntries)
 
 	if err != nil {
 		_ = peerSession.Stop()
@@ -282,6 +286,95 @@ func (a *App) transferFileToPeer(peerSession *session.PeerSession, filePaths []s
 	log.Printf("Sent successfully")
 
 	return nil
+}
+
+func (a *App) getRootEntriesFromFilePaths(peerSession *session.PeerSession, transferId string, paths []string) []*protocol.RootEntry {
+	var rootEntries []*protocol.RootEntry
+	for _, path := range paths {
+		rootEntry, err := getRootEntryFromPath(path)
+		if err != nil {
+			log.Printf("Error getting file info: %v\n", err)
+			continue
+		}
+
+		a.transferRegistry.AddTransferredFile(a.ctx, peerSession.GetPeerInfo().ID, transferId, rootEntry.ID, rootEntry.Name, transfer.InProgress, 0, 0, transfer.Outgoing)
+		peerSession.RootPaths[rootEntry.ID] = path
+		rootEntries = append(rootEntries, rootEntry)
+	}
+
+	for _, rootEntry := range rootEntries {
+		log.Printf("Root Name = %v root Size = %v\n", rootEntry.Name, rootEntry.Size)
+	}
+
+	return rootEntries
+}
+
+func getRootEntryFromPath(path string) (*protocol.RootEntry, error) {
+	fileInfo, err := os.Stat(path)
+
+	if err != nil {
+		log.Printf("Error stating file %v: %v", path, err)
+		return nil, err
+	}
+
+	rootId := uuid.NewString()
+
+	if !fileInfo.IsDir() {
+		fileName := filepath.Base(path)
+		fileId := fmt.Sprintf("%v_%v", filepath.Base(path), time.Now().UnixNano())
+		fileSize := fileInfo.Size()
+
+		return &protocol.RootEntry{
+			ID:   rootId,
+			Name: fileName,
+			Type: protocol.EntryTypeFile,
+			Size: fileSize,
+			Files: []protocol.FileMeta{{
+				ID:   fileId,
+				Path: fileName,
+				Size: fileSize},
+			},
+		}, nil
+	}
+
+	rootEntry := &protocol.RootEntry{
+		ID:    rootId,
+		Name:  filepath.Base(path),
+		Type:  protocol.EntryTypeDirectory,
+		Files: []protocol.FileMeta{},
+	}
+
+	root := path
+	var totalSize int64 = 0
+
+	err = filepath.Walk(root, func(dirPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		relativePath, err := filepath.Rel(root, dirPath)
+
+		if err != nil {
+			return err
+		}
+
+		rootEntry.Files = append(rootEntry.Files, protocol.FileMeta{
+			ID:   fmt.Sprintf("%v_%v", filepath.Base(relativePath), time.Now().UnixNano()),
+			Path: relativePath,
+			Size: info.Size(),
+		})
+		totalSize += info.Size()
+
+		return nil
+	})
+
+	rootEntry.Size = totalSize
+
+	return rootEntry, err
 }
 
 func (a *App) PickFiles() ([]string, error) {
@@ -479,4 +572,19 @@ func (a *App) DisconnectPeer(peerId string) {
 	delete(peerSessions, peerId)
 	log.Info("Peer disconnected %v", peerId)
 	log.Printf("Peer List %v\n", a.ListPeers())
+}
+
+func (a *App) CancelTransferTask(rootId string, transferId string) {
+	transferTask := a.transferRegistry.GetTransferRegistryByRootId(rootId)
+
+	if transferTask == nil {
+		return
+	}
+
+	transferTask.Cancel()
+	transferTask.Meta.Status = transfer.Canceled
+
+	peerSession := peerSessions[transferTask.Meta.PeerId]
+
+	peerSession.CancelTransfer(rootId, transferId)
 }
