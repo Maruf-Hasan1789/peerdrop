@@ -101,7 +101,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	p.OnTransferStart(func(peerId string, transferId string, rootId string, rootName string) {
 		//log.Printf("Transfer Started \n")
 		//need to update the transferred bytes and totalbytes in future
-		a.transferRegistry.AddTransferredFile(peerId, transferId, rootId, rootName, transfer.InProgress, 0, 0, transfer.Outgoing)
+		a.transferRegistry.AddTransferredFile(a.ctx, peerId, transferId, rootId, rootName, transfer.InProgress, 0, 0, transfer.Outgoing)
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "transfer-start", map[string]string{
 				"id":         rootId,
@@ -148,15 +148,15 @@ func (a *App) bindSession(p *session.PeerSession) {
 
 		log.Printf("Emitting Events\n")
 
-		transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peerId)
+		transferTasks := a.transferRegistry.GetAllTransfersByPeerId(peerId)
 
-		log.Printf("On Transfer Error transfer registry len : %v\n", len(transferRegistry))
+		log.Printf("On Transfer Error transfer registry len : %v\n", len(transferTasks))
 
-		for _, t := range transferRegistry {
-			log.Printf("Transfer Registry : %v\n", t.RootName)
-			if t.PeerId == peerId && (t.Status == transfer.InProgress || t.Status == transfer.Pending) &&
-				t.Direction == transfer.Outgoing {
-				err := addNewTransferFileHistory(p.GetPeerInfo().UserName, t.RootName, "SENT", "FAILED", t.RootID)
+		for _, t := range transferTasks {
+			log.Printf("Transfer Registry : %v\n", t.Meta.RootName)
+			if t.Meta.PeerId == peerId && (t.Meta.Status == transfer.InProgress || t.Meta.Status == transfer.Pending) &&
+				t.Meta.Direction == transfer.Outgoing {
+				err := addNewTransferFileHistory(p.GetPeerInfo().UserName, t.Meta.RootName, "SENT", "FAILED", t.Meta.RootID)
 				if err != nil {
 					log.Printf("Error adding file history: %v", err)
 				}
@@ -458,16 +458,6 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, permResp F
 	if err != nil {
 		log.Printf("Error sending permission response: %v\n", err)
 		return
-	}
-}
-
-// just logging function
-// to identify if transfer registry is updated properly or not
-// will remove later on
-func (a *App) showTransferRegistryStatus(incomingFilePermissions map[string]bool) {
-	for rootId, isAllowed := range incomingFilePermissions {
-		registry := a.transferRegistry.GetTransferRegistryByRootId(rootId)
-		log.Printf("Transfer Registry Status for %v: %v %v\n", rootId, isAllowed, (*registry).Status)
 	}
 }
 

@@ -1,5 +1,7 @@
 package transfer
 
+import "context"
+
 type Status int
 type Direction int
 
@@ -26,4 +28,10 @@ type Transfer struct {
 	TransferredBytes int64
 	TotalBytes       int64
 	Direction        Direction
+}
+
+type TransferTask struct {
+	Meta   *Transfer
+	Ctx    context.Context
+	Cancel context.CancelFunc
 }

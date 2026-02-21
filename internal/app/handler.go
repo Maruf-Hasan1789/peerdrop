@@ -49,18 +49,18 @@ func (a *App) HandleConnection(conn transport.Connection) {
 			transferRegistry := a.transferRegistry.GetAllTransfersByPeerId(peer.ID)
 
 			for _, t := range transferRegistry {
-				if t.PeerId == peer.ID && (t.Status == transfer.InProgress || t.Status == transfer.Pending) && t.Direction == transfer.Incoming {
+				if t.Meta.PeerId == peer.ID && (t.Meta.Status == transfer.InProgress || t.Meta.Status == transfer.Pending) && t.Meta.Direction == transfer.Incoming {
 					log.Printf("transfer %v has been cancelled\n", t)
-					cleanUpPartialDownload(a.settings.DownloadPath, t.RootName)
-					err := addNewTransferFileHistory(peer.UserName, t.RootName, "RECEIVED", "FAILED", t.RootID)
+					cleanUpPartialDownload(a.settings.DownloadPath, t.Meta.RootName)
+					err := addNewTransferFileHistory(peer.UserName, t.Meta.RootName, "RECEIVED", "FAILED", t.Meta.RootID)
 					if err != nil {
 						log.Printf("Error adding file history: %v", err)
 					}
 
 					runtime.EventsEmit(a.ctx, "receiving-failed", map[string]interface{}{
 						"peerId": peer.ID,
-						"Id":     t.RootID,
-						"file":   t.RootName,
+						"Id":     t.Meta.RootID,
+						"file":   t.Meta.RootName,
 					})
 				}
 			}
@@ -99,11 +99,11 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				FileSize: rootEntry.Size,
 			}
 
-			a.transferRegistry.AddTransferredFile(peerId, transferId, rootEntry.ID, rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
+			a.transferRegistry.AddTransferredFile(a.ctx, peerId, transferId, rootEntry.ID, rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
 			newFiles = append(newFiles, newFile)
 			registry := a.transferRegistry.GetTransferRegistryByRootId(rootEntry.ID)
 
-			log.Printf("Transfer Registry: %v %v\n", (*registry).RootID, (*registry).Status)
+			log.Printf("Transfer Registry: %v %v\n", (*registry).Meta.RootID, (*registry).Meta.Status)
 		}
 		peer := peerSession.GetPeerInfo()
 
