@@ -94,7 +94,7 @@ func parseVersion(txt []string) string {
 }
 
 func GetSelfPeer(port int) *Peer {
-	instanceName := fmt.Sprintf("peerdrop-%s-%d", utils.GetHostname(), port)
+	instanceName := fmt.Sprintf("peerdrop-%s", utils.GetHostname())
 	serviceName := "_peerdrop._tcp"
 	domain := "local."
 
