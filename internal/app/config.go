@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	"github.com/labstack/gommon/log"
@@ -28,7 +29,7 @@ func LoadOrCreateSettings() (*Settings, error) {
 
 	if _, err = os.Stat(*settingsFile); os.IsNotExist(err) {
 		settings = &Settings{
-			UserName:                        "User",
+			UserName:                        getHostUserName(),
 			DownloadPath:                    filepath.Join(os.Getenv("HOME"), "Downloads"),
 			IsPermissionRequiredToSendFiles: false,
 		}
@@ -59,6 +60,16 @@ func LoadOrCreateSettings() (*Settings, error) {
 	return settings, nil
 }
 
+func getHostUserName() string {
+	u, err := user.Current()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return "User"
+	}
+
+	return u.Username
+}
+
 func getSettingsFilePath() (*string, error) {
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
@@ -67,6 +78,7 @@ func getSettingsFilePath() (*string, error) {
 
 	appConfigDir := filepath.Join(userConfigDir, "PeerDrop")
 
+	log.Printf("Loading settings from %v", appConfigDir)
 	err = os.MkdirAll(appConfigDir, os.ModePerm)
 
 	if err != nil {
