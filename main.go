@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"log"
+	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/app"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
@@ -80,17 +81,16 @@ func main() {
 			log.Println(err)
 			cancel()
 		}
-		/*
-			ticker := time.NewTicker(30 * time.Second)
-			for range ticker.C {
-				err := d.Browse(ctx, *selfPeer)
-				if err != nil {
-					log.Println(err)
-					cancel()
-				}
-			}
 
-		*/
+		ticker := time.NewTicker(30 * time.Second)
+		for range ticker.C {
+			err := d.Browse(ctx, *selfPeer)
+			if err != nil {
+				log.Println(err)
+				cancel()
+			}
+		}
+
 	}()
 
 	if err != nil {
