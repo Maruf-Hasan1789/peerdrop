@@ -58,7 +58,7 @@ func NewPeerFromEntry(e *zeroconf.ServiceEntry) *Peer {
 		userName = e.Instance
 	}
 	return &Peer{
-		ID:        peerID(e.Instance),
+		ID:        peerID(e.Instance + e.Service + e.Domain),
 		Name:      e.Instance,
 		Addresses: append(e.AddrIPv4, e.AddrIPv6...),
 		Port:      e.Port,
@@ -94,10 +94,13 @@ func parseVersion(txt []string) string {
 }
 
 func GetSelfPeer(port int) *Peer {
-	serviceName := fmt.Sprintf("peerdrop-%s-%d", utils.GetHostname(), port)
+	instanceName := fmt.Sprintf("peerdrop-%s-%d", utils.GetHostname(), port)
+	serviceName := "_peerdrop._tcp"
+	domain := "local."
+
 	return &Peer{
-		ID:        peerID(serviceName),
-		Name:      serviceName,
+		ID:        peerID(instanceName + serviceName + domain),
+		Name:      instanceName,
 		Addresses: utils.GetLocalIps(),
 		Port:      port,
 		Version:   parseVersion([]string{"version=1"}),
