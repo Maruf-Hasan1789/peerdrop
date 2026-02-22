@@ -10,5 +10,11 @@
   "author": {
     "name": "maruf_hasan",
     "email": "marufhasan212@gmail.com"
+  },
+  "info": {
+    "productName": "PeerDrop",
+    "productVersion": "0.0.1",
+    "companyName": "maruf_hasan",
+    "fileDescription": "A fast and simple file sharing application."
   }
 }
