@@ -74,7 +74,8 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				"id":        peer.ID,
 				"port":      peer.Port,
 			})
-
+			
+			delete(peerSessions, peer.ID)
 			err := peerSession.Stop()
 			if err != nil {
 				log.Printf("Error stopping peer: %v", err)

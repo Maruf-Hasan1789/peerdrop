@@ -79,6 +79,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	})
 
 	p.OnDisconnected(func(peer discovery.Peer) {
+		delete(peerSessions, p.ID)
 		log.Printf("Here in disconnect app.go line 74\n")
 		log.Info("peer disconnected %v %v\n", peer.Name, peer.UserName)
 		if a.ctx != nil {
@@ -91,11 +92,14 @@ func (a *App) bindSession(p *session.PeerSession) {
 			})
 
 			err := p.Stop()
+
 			if err != nil {
 				log.Printf("Error stopping peer: %v", err)
 				return
 			}
 		}
+
+		delete(peerSessions, p.ID)
 	})
 
 	p.OnTransferStart(func(peerId string, transferId string, rootId string, rootName string) {
@@ -145,6 +149,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 
 	p.OnTransferError(func(peerId string, transferId string, rootId string, rootName string, err error) {
 		log.Printf("Here on event handler on Transfer Error\n")
+		delete(peerSessions, peerId)
 
 		log.Printf("Emitting Events\n")
 
@@ -229,6 +234,7 @@ func (a *App) SendFileToPeer(peerId string, filePaths []string) error {
 
 	selectedPeerSession, ok := peerSessions[peerId]
 	if !ok {
+		log.Printf("Peer Session does not exist\n")
 		log.Printf("Peer %v not found in peer sessions %v\n", peerId, peerSessions)
 
 		peerInfo := a.discovery.GetPeerById(peerId)
@@ -458,16 +464,6 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, permResp F
 	if err != nil {
 		log.Printf("Error sending permission response: %v\n", err)
 		return
-	}
-}
-
-// just logging function
-// to identify if transfer registry is updated properly or not
-// will remove later on
-func (a *App) showTransferRegistryStatus(incomingFilePermissions map[string]bool) {
-	for rootId, isAllowed := range incomingFilePermissions {
-		registry := a.transferRegistry.GetTransferRegistryByRootId(rootId)
-		log.Printf("Transfer Registry Status for %v: %v %v\n", rootId, isAllowed, (*registry).Status)
 	}
 }
 
