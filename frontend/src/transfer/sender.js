@@ -47,9 +47,11 @@ function createTransferCard(id, peerId, fileName, transferId) {
             <div class="progress-bar"></div>
         </div>
         <div class="transfer-actions">
+            <!-- Pause/Resume and Cancel (Stop) not working - commented out
             <button class="action-btn pause">⏸</button>
             <button class="action-btn resume" style="display:none;">▶️</button>
             <button class="action-btn cancel">❌</button>
+            -->
         </div>
     `;
 
@@ -66,31 +68,30 @@ function createTransferCard(id, peerId, fileName, transferId) {
     ongoingTransfers.set(id, transfer);
     updateTransferCount();
 
-    const pauseBtn = card.querySelector(".pause");
-    const resumeBtn = card.querySelector(".resume");
-    const cancelBtn = card.querySelector(".cancel");
+    // Pause/Resume and Cancel (Stop) buttons not working - commented out
+    // const pauseBtn = card.querySelector(".pause");
+    // const resumeBtn = card.querySelector(".resume");
+    // const cancelBtn = card.querySelector(".cancel");
 
-    pauseBtn.addEventListener("click", () => {
-        if (transfer.state !== "active") return;
+    // pauseBtn.addEventListener("click", () => {
+    //     if (transfer.state !== "active") return;
+    //     transfer.paused = true;
+    //     pauseBtn.style.display = "none";
+    //     resumeBtn.style.display = "inline-flex";
+    //     // backend pause here
+    // });
 
-        transfer.paused = true;
-        pauseBtn.style.display = "none";
-        resumeBtn.style.display = "inline-flex";
-        // backend pause here
-    });
+    // resumeBtn.addEventListener("click", () => {
+    //     if (transfer.state !== "active") return;
+    //     transfer.paused = false;
+    //     pauseBtn.style.display = "inline-flex";
+    //     resumeBtn.style.display = "none";
+    //     // backend resume here
+    // });
 
-    resumeBtn.addEventListener("click", () => {
-        if (transfer.state !== "active") return;
-
-        transfer.paused = false;
-        pauseBtn.style.display = "inline-flex";
-        resumeBtn.style.display = "none";
-        // backend resume here
-    });
-
-    cancelBtn.addEventListener("click", () => {
-        cancelTransfer(transferId, "user-cancelled");
-    });
+    // cancelBtn.addEventListener("click", () => {
+    //     cancelTransfer(transferId, "user-cancelled");
+    // });
 }
 
 
