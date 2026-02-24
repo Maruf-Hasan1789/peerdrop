@@ -52,16 +52,33 @@ Download the latest pre-built releases here:
 ## 🛠 Installation
 
 ### Ubuntu / Linux
-
+1. Download the .deb from [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases).
+2. Then run the command
 ```bash
 sudo apt install peerdropapp
 ```
+
+3. It may require you install other dependencies if not found.
+
 ### Windows
 
 1. Download the installer from the [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases).
 2. Run the installer and follow the prompts.
 3. Allow permissions for private and public networks
 
+
+### macOS Installation
+
+1. **Install:** Open the `.dmg` and drag **PeerDrop** to your **Applications** folder.
+2. **Authorize:** * Open PeerDrop from your Applications folder. When the "unidentified developer" block appears, click **Done**.
+    * Go to **System Settings > Privacy & Security**.
+    * Scroll down to the **Security** section and click **Open Anyway**.
+    * Enter your password and click **Open**.
+3. **Network:** Click **Allow** when asked for **Local Network** permissions. This is required for PeerDrop to find other devices via mDNS.
+
+> [!TIP]
+> **Advanced Users:** To skip the security steps above, run this in Terminal after moving the app to Applications:  
+> `sudo xattr -rd com.apple.quarantine /Applications/peerdropApp.app`
 ---
 
 ### Build from Source (Optional)
