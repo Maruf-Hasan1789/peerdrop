@@ -67,7 +67,7 @@ sudo apt install peerdropapp
 3. Allow permissions for private and public networks
 
 
-### macOS Installation (May have issues due to incomplete testing)
+### macOS Installation
 
 1. **Install:** Open the `.dmg` and drag **PeerDrop** to your **Applications** folder.
 2. **Authorize:** * Open PeerDrop from your Applications folder. When the "unidentified developer" block appears, click **Done**.
@@ -80,7 +80,7 @@ sudo apt install peerdropapp
 > **Advanced Users:** To skip the security steps above, run this in Terminal after moving the app to Applications:  
 > `sudo xattr -rd com.apple.quarantine /Applications/peerdropApp.app`
 ---
-
+App may behave unexpectedly in macOS as I couldn't do proper testing.
 ### Build from Source (Optional)
 
 #### Prerequisites
