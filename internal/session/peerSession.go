@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -497,6 +498,17 @@ func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 	}
 
 	fileName := f.fileMeta.Path
+	fileName = strings.ReplaceAll(fileName, "/", string(filepath.Separator))
+	fileName = strings.ReplaceAll(fileName, `\`, string(filepath.Separator))
+	fileName = strings.TrimPrefix(fileName, " ")
+	if fileName == "" {
+		log.Printf("File name is empty\n")
+		return
+	}
+	if filepath.IsAbs(fileName) {
+		log.Printf("Ignoring absolute file %v\n", fileName)
+		return
+	}
 
 	if f.file == nil {
 
@@ -507,19 +519,33 @@ func (p *PeerSession) handleChunk(msg protocol.Message, downloadPath string) {
 		}
 
 		var filePath string
+		var baseDir string
+		var cleanPath string
 		if rootEntry.Type == protocol.EntryTypeDirectory {
-			filePath = filepath.Join(downloadPath, rootEntry.Name, fileName)
-
-			err := os.MkdirAll(filepath.Dir(filePath), 0755)
-			if err != nil {
-				log.Printf("Error creating directory: %v\n", err)
-				return
-			}
+			baseDir = filepath.Join(downloadPath, rootEntry.Name)
 		} else {
-			filePath = filepath.Join(downloadPath, fileName)
+			baseDir = downloadPath
 		}
 
-		file, err := openFile(filePath)
+		baseDir = filepath.Clean(baseDir)
+
+		filePath = filepath.Join(baseDir, fileName)
+		cleanPath = filepath.Clean(filePath)
+
+		rel, err := filepath.Rel(baseDir, cleanPath)
+
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			log.Printf("Invalid path %v\n", cleanPath)
+			return
+		}
+
+		err = os.MkdirAll(filepath.Dir(cleanPath), 0755)
+		if err != nil {
+			log.Printf("Error creating directory: %v\n", err)
+			return
+		}
+
+		file, err := openFile(cleanPath)
 		if err != nil {
 			log.Printf("Error opening file %v\n", err)
 			return
