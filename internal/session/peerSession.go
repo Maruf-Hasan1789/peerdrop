@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,6 +18,7 @@ import (
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transport/pb"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/google/uuid"
+	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"google.golang.org/protobuf/proto"
 )
@@ -205,14 +205,14 @@ func (p *PeerSession) handleMessage(header []byte, payload []byte, downloadPath 
 
 func (p *PeerSession) handleControl(msg *pb.Message, payload []byte, downloadPath string) {
 
-	log.Printf("Handling Control %v\n", msg)
+	//log.Printf("Handling Control %v\n", msg)
 	control := msg.GetControl()
 	action := control.GetAction()
 
 	if action == pb.ControlAction_CONTROL_ACTION_HANDSHAKE_ACK {
 		p.mu.Lock()
 
-		log.Printf("Message ID %v", msg.GetId())
+		//log.Printf("Message ID %v", msg.GetId())
 
 		ch, ok := p.fileSendingPermissions[msg.GetId()]
 		p.mu.Unlock()
@@ -273,7 +273,7 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 	select {
 	case control := <-permCh:
 		if control.GetMode() == pb.PermissionMode_PERMISSION_MODE_NONE {
-			log.Printf("Permission is denied\n")
+			//log.Printf("Permission is denied\n")
 
 			if p.onTransferPermissionDenied != nil {
 				p.onTransferPermissionDenied(p.peer.ID, transferId, rootEntries)
@@ -286,14 +286,14 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 			for _, rootEntry := range rootEntries {
 				wg.Add(1)
 				rootPath := p.rootPaths[rootEntry.GetId()]
-				log.Printf("Here rootPath %v\n", rootPath)
+				//log.Printf("Here rootPath %v\n", rootPath)
 				go p.SendRootEntry(transferId, rootEntry, rootPath, &wg)
 			}
 			wg.Wait()
 			totalTime := time.Since(startingTime).Seconds()
 			log.Printf("Here total time %v seconds\n", totalTime)
 		} else {
-			log.Printf("Partial Permission is allowed\n")
+			//log.Printf("Partial Permission is allowed\n")
 
 			allowedRootID := make(map[string]bool)
 
@@ -377,7 +377,7 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta *pb.FileMeta, rootPat
 		filePath = filepath.Join(rootPath, fileMeta.Path)
 	}
 
-	log.Printf("File Path of rootEntry Type = %v rootPath = %v FileMetaPath = %v\n filePath = %v\n", rootEntry.Type, rootPath, fileMeta.Path, filePath)
+	//log.Printf("File Path of rootEntry Type = %v rootPath = %v FileMetaPath = %v\n filePath = %v\n", rootEntry.Type, rootPath, fileMeta.Path, filePath)
 	f, err := os.Open(filePath)
 
 	if err != nil {
@@ -597,7 +597,7 @@ func (p *PeerSession) handleChunk(msg *pb.Message, payload []byte, downloadPath 
 
 	finalHash := hash.Sum(nil)
 	receivedChecksum := hex.EncodeToString(finalHash)
-	log.Printf("Calculated CheckSum %v Received Checksum %v\n", receivedChecksum, chunk.GetChecksum())
+	//log.Printf("Calculated CheckSum %v Received Checksum %v\n", receivedChecksum, chunk.GetChecksum())
 	if receivedChecksum == chunk.GetChecksum() && f.receivedChunks[int(chunk.GetIndex())] == false {
 		offset := chunk.GetOffset()
 		_, err := f.file.WriteAt(payload, offset)
@@ -638,7 +638,7 @@ func (p *PeerSession) handleChunk(msg *pb.Message, payload []byte, downloadPath 
 	}
 
 	if complete {
-		log.Printf("File: %v is received successfully\n", fileName)
+		//log.Printf("File: %v is received successfully\n", fileName)
 		fileInfo, err := f.file.Stat()
 		if err != nil {
 			log.Printf("Error getting file size %v\n", err)
@@ -683,7 +683,7 @@ func (p *PeerSession) GetPeerInfo() discovery.Peer {
 }
 
 func (p *PeerSession) handleDisconnect(err error) {
-	log.Printf("Peer disconnected during reading %v %v\n", p.peer.Name, err)
+	//log.Printf("Peer disconnected during reading %v %v\n", p.peer.Name, err)
 
 	if p.onDisconnected != nil {
 		log.Printf("Peer On Disconnected Provided: %v\n", p.peer.Name)
@@ -696,7 +696,7 @@ func (p *PeerSession) handleDisconnect(err error) {
 }
 
 func (p *PeerSession) handleHandshake(msg *pb.Message, payload []byte, path string) {
-	log.Printf("Handling Handshake %v\n", msg)
+	//log.Printf("Handling Handshake %v\n", msg)
 	handshake := msg.GetPayload().(*pb.Message_Handshake).Handshake
 	roots := handshake.GetRoots()
 
@@ -749,10 +749,6 @@ func (p *PeerSession) getRootEntriesFromFilePaths(paths []string) []*pb.RootEntr
 
 		p.rootPaths[rootEntry.GetId()] = path
 		rootEntries = append(rootEntries, rootEntry)
-	}
-
-	for _, rootEntry := range rootEntries {
-		log.Printf("Root Name = %v root Size = %v\n", rootEntry.Name, rootEntry.Size)
 	}
 
 	return rootEntries

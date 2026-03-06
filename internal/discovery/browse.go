@@ -2,16 +2,16 @@ package discovery
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/grandcat/zeroconf"
+	"github.com/labstack/gommon/log"
 )
 
 func (d *Discovery) Browse(ctx context.Context, selfPeer Peer) error {
 	time.Sleep(10 * time.Second)
 
-	log.Printf("Started browsing")
+	//log.Printf("Started browsing")
 
 	ifaces, err := getSecureLANInterfaces()
 
