@@ -21,7 +21,6 @@ var wailsApp *app.App
 var assets embed.FS
 
 func main() {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -3,23 +3,15 @@ package transport
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/transport/pb"
+	"google.golang.org/protobuf/proto"
 )
-
-type Hello struct {
-	ID       string
-	Name     string
-	Port     int
-	Version  string
-	UserName string
-}
 
 type PermissionResponse struct {
 	Allowed bool
@@ -59,8 +51,8 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 		return err
 	}
 
-	log.Printf("Remote Version = %v selfVersion = %v\n", remoteHello.Version, peer.Version)
-	if remoteHello.Version != peer.Version {
+	log.Printf("Remote Version = %v selfVersion = %v\n", remoteHello.GetVersion(), peer.Version)
+	if remoteHello.GetVersion() != peer.Version {
 		return fmt.Errorf("version mismatch")
 	}
 
@@ -72,60 +64,11 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 
 	log.Printf("Remote Hello %v", remoteHello)
 
-	/*if options.PermissionFunc != nil {
-		//receiver part
-		allowed, err := options.PermissionFunc(ctx, discovery.SenderInfo{
-			ID:       remoteHello.ID,
-			Name:     remoteHello.Name,
-			UserName: remoteHello.UserName,
-			Files:    remoteHello.Files,
-		})
-
-		if err != nil {
-			log.Printf("error checking permissions: %v", err)
-			return err
-		}
-
-		if !allowed {
-			log.Printf("Permission denied by user\n")
-			permissionResponse := &PermissionResponse{
-				Allowed: false,
-				Code:    PermDeniedByUser,
-				Message: "Permission denied by user",
-			}
-
-			sendPermissionResponse(conn.conn, permissionResponse)
-		} else {
-			log.Printf("Permission granted by user\n")
-			permissionResponse := &PermissionResponse{
-				Allowed: true,
-				Code:    PermOK,
-				Message: "Permission granted by user",
-			}
-			sendPermissionResponse(conn.conn, permissionResponse)
-		}
-	} else {
-		//sender receives permission
-		permissionResponse, err := receivePermission(conn.conn)
-		if err != nil {
-			log.Printf("error receiving permission: %v", err)
-			return err
-		}
-		if !permissionResponse.Allowed {
-			log.Printf("Permission denied by user\n")
-			return fmt.Errorf("Permission denied by user\n")
-		}
-
-		log.Printf("Permission allowed by user\n")
-	}
-
-	*/
-
 	remotePeer := discovery.Peer{
-		ID:      remoteHello.ID,
-		Name:    remoteHello.Name,
-		Port:    remoteHello.Port,
-		Version: remoteHello.Version,
+		ID:      remoteHello.GetId(),
+		Name:    remoteHello.GetName(),
+		Port:    int(remoteHello.GetPort()),
+		Version: remoteHello.GetVersion(),
 	}
 
 	conn.peer = remotePeer
@@ -137,34 +80,19 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 	return nil
 }
 
-func receivePermission(conn net.Conn) (*PermissionResponse, error) {
-	data, err := readFrame(conn)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var permissionResponse *PermissionResponse
-	if err := json.Unmarshal(data, &permissionResponse); err != nil {
-		return nil, err
-	}
-
-	return permissionResponse, nil
-}
-
 func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer) error {
 	log.Printf("Sending Hello %v\n", peer)
-	hello := &Hello{
-		ID:       peer.ID,
+	hello := &pb.Hello{
+		Id:       peer.ID,
 		Name:     peer.Name,
-		Port:     peer.Port,
+		Port:     int32(peer.Port),
 		Version:  peer.Version,
 		UserName: peer.UserName,
 	}
 
 	log.Printf("Marshalling Hello %v\n", hello)
 
-	data, err := json.Marshal(hello)
+	data, err := proto.Marshal(hello)
 	if err != nil {
 		return err
 	}
@@ -172,16 +100,16 @@ func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer) error {
 	return writeFrame(w, data)
 }
 
-func receiveHello(r io.Reader) (*Hello, error) {
+func receiveHello(r io.Reader) (*pb.Hello, error) {
 	data, err := readFrame(r)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var hello *Hello
+	hello := &pb.Hello{}
 
-	if err := json.Unmarshal(data, &hello); err != nil {
+	if err := proto.Unmarshal(data, hello); err != nil {
 		return nil, err
 	}
 
@@ -214,15 +142,4 @@ func writeFrame(w io.Writer, payload []byte) error {
 
 	log.Printf("Error while writing payload %v\n", err)
 	return err
-}
-
-func sendPermissionResponse(writer io.Writer, permissionResponse *PermissionResponse) {
-	data, err := json.Marshal(permissionResponse)
-	if err != nil {
-		log.Printf("Error while marshalling permission response: %v\n", err)
-	}
-
-	if err := writeFrame(writer, data); err != nil {
-		log.Printf("Error while writing frame: %v\n", err)
-	}
 }

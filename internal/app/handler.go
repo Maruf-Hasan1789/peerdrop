@@ -6,10 +6,10 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/domain"
-	"github.com/Maruf-Hasan1789/peerdrop/internal/protocol"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/session"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transfer"
 	transport2 "github.com/Maruf-Hasan1789/peerdrop/internal/transport"
+	"github.com/Maruf-Hasan1789/peerdrop/internal/transport/pb"
 	transport "github.com/Maruf-Hasan1789/peerdrop/internal/transport/tcp"
 	"github.com/labstack/gommon/log"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -74,7 +74,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 				"id":        peer.ID,
 				"port":      peer.Port,
 			})
-			
+
 			delete(peerSessions, peer.ID)
 			err := peerSession.Stop()
 			if err != nil {
@@ -88,21 +88,21 @@ func (a *App) HandleConnection(conn transport.Connection) {
 		log.Printf("Session error %v\n", err)
 	})
 
-	peerSession.OnFileOffer(func(peerId string, transferId string, rootEntries []*protocol.RootEntry, totalSize int64) {
+	peerSession.OnFileOffer(func(peerId string, transferId string, rootEntries []*pb.RootEntry, totalSize int64) {
 		log.Printf("Peer session on file offer in handler %v %v %v\n", peerId, rootEntries, totalSize)
 
 		var newFiles []domain.FileMetadata
 
 		for _, rootEntry := range rootEntries {
 			newFile := domain.FileMetadata{
-				ID:       rootEntry.ID,
-				FileName: rootEntry.Name,
-				FileSize: rootEntry.Size,
+				ID:       rootEntry.GetId(),
+				FileName: rootEntry.GetName(),
+				FileSize: rootEntry.GetSize(),
 			}
 
-			a.transferRegistry.AddTransferredFile(peerId, transferId, rootEntry.ID, rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
+			a.transferRegistry.AddTransferredFile(peerId, transferId, rootEntry.GetId(), rootEntry.Name, transfer.Pending, 0, rootEntry.Size, transfer.Incoming)
 			newFiles = append(newFiles, newFile)
-			registry := a.transferRegistry.GetTransferRegistryByRootId(rootEntry.ID)
+			registry := a.transferRegistry.GetTransferRegistryByRootId(rootEntry.GetId())
 
 			log.Printf("Transfer Registry: %v %v\n", (*registry).RootID, (*registry).Status)
 		}
@@ -136,7 +136,7 @@ func (a *App) HandleConnection(conn transport.Connection) {
 
 			//allowing all files
 			permissionResp := FileReceivePermissionResponse{
-				Mode:  protocol.PermissionAll,
+				Mode:  pb.PermissionMode_PERMISSION_MODE_ALL,
 				Files: maap,
 			}
 
