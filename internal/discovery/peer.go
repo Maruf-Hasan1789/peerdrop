@@ -9,7 +9,6 @@ import (
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/utils"
 	"github.com/grandcat/zeroconf"
-	"github.com/labstack/gommon/log"
 )
 
 type ActivePeers struct {
@@ -51,7 +50,7 @@ func ToPeerDTO(p Peer) PeerDTO {
 }
 
 func NewPeerFromEntry(e *zeroconf.ServiceEntry) *Peer {
-	log.Printf("NewPeerFromEntry %v\n", e.Text)
+	//log.Printf("NewPeerFromEntry %v\n", e.Text)
 	userName := parseUserName(e.Text)
 
 	if len(userName) == 0 {
