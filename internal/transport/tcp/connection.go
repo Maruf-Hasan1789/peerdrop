@@ -17,8 +17,8 @@ const (
 )
 
 type Connection interface {
-	Send([]byte) error
-	Receive() ([]byte, error)
+	Send([]byte, []byte) error
+	Receive() ([]byte, []byte, error)
 	Close() error
 	PeerInfo() discovery.Peer
 }
@@ -34,35 +34,50 @@ func NewTCPConnection(conn net.Conn, peer discovery.Peer, role connRole) Connect
 	return &tcpConnection{conn: conn, peer: peer, role: role}
 }
 
-func (conn *tcpConnection) Send(data []byte) error {
+func (conn *tcpConnection) Send(header []byte, payload []byte) error {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
-	length := uint32(len(data))
+	headerLen := len(header)
+	payloadLen := len(payload)
 
-	//writing length first
-	if err := binary.Write(conn.conn, binary.BigEndian, length); err != nil {
-		return err
+	totalLen := 4 + headerLen + payloadLen // headerLength + Header + payloadLength (needed for framing)
+
+	var prefix [8]byte
+	binary.BigEndian.PutUint32(prefix[:4], uint32(totalLen))
+	binary.BigEndian.PutUint32(prefix[4:8], uint32(headerLen))
+
+	buffers := net.Buffers{
+		prefix[:],
+		header,
+		payload,
 	}
 
-	//writing payload
-	_, err := conn.conn.Write(data)
+	_, err := buffers.WriteTo(conn.conn)
 
 	return err
 }
 
-func (conn *tcpConnection) Receive() ([]byte, error) {
-	var length uint32
+func (conn *tcpConnection) Receive() ([]byte, []byte, error) {
+	var totalLengthBuf [4]byte
 
-	if err := binary.Read(conn.conn, binary.BigEndian, &length); err != nil {
-		return nil, err
+	if _, err := io.ReadFull(conn.conn, totalLengthBuf[:]); err != nil {
+		return nil, nil, err
 	}
 
-	buf := make([]byte, length)
+	totalLength := binary.BigEndian.Uint32(totalLengthBuf[:])
 
-	_, err := io.ReadFull(conn.conn, buf)
+	//we can use pre-allocated buffer pool here (need to read about it)
+	buf := make([]byte, totalLength)
+	if _, err := io.ReadFull(conn.conn, buf); err != nil {
+		return nil, nil, err
+	}
 
-	return buf, err
+	headerLen := binary.BigEndian.Uint32(buf[:4])
+	header := buf[4 : 4+headerLen]
+	payload := buf[4+headerLen:]
+
+	return header, payload, nil
 }
 
 func (conn *tcpConnection) Close() error {

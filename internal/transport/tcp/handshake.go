@@ -2,14 +2,12 @@ package transport
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-	"io"
-	"log"
 	"time"
 
 	"github.com/Maruf-Hasan1789/peerdrop/internal/discovery"
 	"github.com/Maruf-Hasan1789/peerdrop/internal/transport/pb"
+	"github.com/labstack/gommon/log"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -37,13 +35,13 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 
 	//send hello
 	if conn.role == outbound {
-		if err := sendHello(ctx, conn.conn, peer); err != nil {
+		if err := sendHello(ctx, conn, peer); err != nil {
 			return err
 		}
 	}
 
 	//receive hello
-	remoteHello, err := receiveHello(conn.conn)
+	remoteHello, err := receiveHello(conn)
 
 	log.Printf("Received hello from %v\n", remoteHello)
 	if err != nil {
@@ -57,7 +55,7 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 	}
 
 	if conn.role == inbound {
-		if err := sendHello(ctx, conn.conn, peer); err != nil {
+		if err := sendHello(ctx, conn, peer); err != nil {
 			return err
 		}
 	}
@@ -80,7 +78,7 @@ func handshake(ctx context.Context, conn *tcpConnection, peer *discovery.Peer) e
 	return nil
 }
 
-func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer) error {
+func sendHello(ctx context.Context, conn Connection, peer *discovery.Peer) error {
 	log.Printf("Sending Hello %v\n", peer)
 	hello := &pb.Hello{
 		Id:       peer.ID,
@@ -91,55 +89,37 @@ func sendHello(ctx context.Context, w io.Writer, peer *discovery.Peer) error {
 	}
 
 	log.Printf("Marshalling Hello %v\n", hello)
+	msg := &pb.Message{
+		Payload: &pb.Message_Hello{
+			Hello: hello,
+		},
+	}
 
-	data, err := proto.Marshal(hello)
+	data, err := proto.Marshal(msg)
+
 	if err != nil {
 		return err
 	}
 
-	return writeFrame(w, data)
+	return conn.Send(data, nil)
 }
 
-func receiveHello(r io.Reader) (*pb.Hello, error) {
-	data, err := readFrame(r)
+func receiveHello(conn Connection) (*pb.Hello, error) {
+	header, _, err := conn.Receive()
 
 	if err != nil {
+		log.Printf("Error while receiving from connection %v\n", err)
 		return nil, err
 	}
 
-	hello := &pb.Hello{}
+	msg := &pb.Message{}
 
-	if err := proto.Unmarshal(data, hello); err != nil {
+	if err = proto.Unmarshal(header, msg); err != nil {
+		log.Printf("Error while unmarshalling Header in Hello\n")
 		return nil, err
 	}
+
+	hello := msg.GetHello()
 
 	return hello, nil
-}
-
-func readFrame(r io.Reader) ([]byte, error) {
-	var length uint32
-
-	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
-		return nil, err
-	}
-
-	buf := make([]byte, length)
-
-	_, err := io.ReadFull(r, buf)
-	return buf, err
-}
-
-func writeFrame(w io.Writer, payload []byte) error {
-	log.Printf("Writing Frame\n")
-	length := uint32(len(payload))
-
-	if err := binary.Write(w, binary.BigEndian, length); err != nil {
-		log.Printf("Error while writing binary write %v\n", err)
-		return err
-	}
-
-	_, err := w.Write(payload)
-
-	log.Printf("Error while writing payload %v\n", err)
-	return err
 }

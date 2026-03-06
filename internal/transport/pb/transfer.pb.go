@@ -71,30 +71,33 @@ type MessageType int32
 
 const (
 	MessageType_MESSAGE_TYPE_UNSPECIFIED MessageType = 0
-	MessageType_MESSAGE_TYPE_HANDSHAKE   MessageType = 1
-	MessageType_MESSAGE_TYPE_CHUNK       MessageType = 2
-	MessageType_MESSAGE_TYPE_ACK         MessageType = 3
-	MessageType_MESSAGE_TYPE_CONTROL     MessageType = 4
-	MessageType_MESSAGE_TYPE_DONE        MessageType = 5
+	MessageType_MESSAGE_TYPE_HELLO       MessageType = 1
+	MessageType_MESSAGE_TYPE_HANDSHAKE   MessageType = 2
+	MessageType_MESSAGE_TYPE_CHUNK       MessageType = 3
+	MessageType_MESSAGE_TYPE_ACK         MessageType = 4
+	MessageType_MESSAGE_TYPE_CONTROL     MessageType = 5
+	MessageType_MESSAGE_TYPE_DONE        MessageType = 6
 )
 
 // Enum value maps for MessageType.
 var (
 	MessageType_name = map[int32]string{
 		0: "MESSAGE_TYPE_UNSPECIFIED",
-		1: "MESSAGE_TYPE_HANDSHAKE",
-		2: "MESSAGE_TYPE_CHUNK",
-		3: "MESSAGE_TYPE_ACK",
-		4: "MESSAGE_TYPE_CONTROL",
-		5: "MESSAGE_TYPE_DONE",
+		1: "MESSAGE_TYPE_HELLO",
+		2: "MESSAGE_TYPE_HANDSHAKE",
+		3: "MESSAGE_TYPE_CHUNK",
+		4: "MESSAGE_TYPE_ACK",
+		5: "MESSAGE_TYPE_CONTROL",
+		6: "MESSAGE_TYPE_DONE",
 	}
 	MessageType_value = map[string]int32{
 		"MESSAGE_TYPE_UNSPECIFIED": 0,
-		"MESSAGE_TYPE_HANDSHAKE":   1,
-		"MESSAGE_TYPE_CHUNK":       2,
-		"MESSAGE_TYPE_ACK":         3,
-		"MESSAGE_TYPE_CONTROL":     4,
-		"MESSAGE_TYPE_DONE":        5,
+		"MESSAGE_TYPE_HELLO":       1,
+		"MESSAGE_TYPE_HANDSHAKE":   2,
+		"MESSAGE_TYPE_CHUNK":       3,
+		"MESSAGE_TYPE_ACK":         4,
+		"MESSAGE_TYPE_CONTROL":     5,
+		"MESSAGE_TYPE_DONE":        6,
 	}
 )
 
@@ -289,13 +292,13 @@ type Message struct {
 	SessionId string                 `protobuf:"bytes,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
+	//	*Message_Hello
 	//	*Message_Handshake
 	//	*Message_Chunk
 	//	*Message_Ack
 	//	*Message_Resume
 	//	*Message_Control
 	Payload       isMessage_Payload `protobuf_oneof:"payload"`
-	Done          bool              `protobuf:"varint,10,opt,name=done,proto3" json:"done,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -365,6 +368,15 @@ func (x *Message) GetPayload() isMessage_Payload {
 	return nil
 }
 
+func (x *Message) GetHello() *Hello {
+	if x != nil {
+		if x, ok := x.Payload.(*Message_Hello); ok {
+			return x.Hello
+		}
+	}
+	return nil
+}
+
 func (x *Message) GetHandshake() *Handshake {
 	if x != nil {
 		if x, ok := x.Payload.(*Message_Handshake); ok {
@@ -410,36 +422,35 @@ func (x *Message) GetControl() *Control {
 	return nil
 }
 
-func (x *Message) GetDone() bool {
-	if x != nil {
-		return x.Done
-	}
-	return false
-}
-
 type isMessage_Payload interface {
 	isMessage_Payload()
 }
 
+type Message_Hello struct {
+	Hello *Hello `protobuf:"bytes,5,opt,name=hello,proto3,oneof"`
+}
+
 type Message_Handshake struct {
-	Handshake *Handshake `protobuf:"bytes,5,opt,name=handshake,proto3,oneof"`
+	Handshake *Handshake `protobuf:"bytes,6,opt,name=handshake,proto3,oneof"`
 }
 
 type Message_Chunk struct {
-	Chunk *Chunk `protobuf:"bytes,6,opt,name=chunk,proto3,oneof"`
+	Chunk *Chunk `protobuf:"bytes,7,opt,name=chunk,proto3,oneof"`
 }
 
 type Message_Ack struct {
-	Ack *Ack `protobuf:"bytes,7,opt,name=ack,proto3,oneof"`
+	Ack *Ack `protobuf:"bytes,8,opt,name=ack,proto3,oneof"`
 }
 
 type Message_Resume struct {
-	Resume *Resume `protobuf:"bytes,8,opt,name=resume,proto3,oneof"`
+	Resume *Resume `protobuf:"bytes,9,opt,name=resume,proto3,oneof"`
 }
 
 type Message_Control struct {
-	Control *Control `protobuf:"bytes,9,opt,name=control,proto3,oneof"`
+	Control *Control `protobuf:"bytes,10,opt,name=control,proto3,oneof"`
 }
+
+func (*Message_Hello) isMessage_Payload() {}
 
 func (*Message_Handshake) isMessage_Payload() {}
 
@@ -451,19 +462,94 @@ func (*Message_Resume) isMessage_Payload() {}
 
 func (*Message_Control) isMessage_Payload() {}
 
+type Hello struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Port          int32                  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	Version       string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	UserName      string                 `protobuf:"bytes,5,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Hello) Reset() {
+	*x = Hello{}
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Hello) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Hello) ProtoMessage() {}
+
+func (x *Hello) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Hello.ProtoReflect.Descriptor instead.
+func (*Hello) Descriptor() ([]byte, []int) {
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Hello) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Hello) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Hello) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *Hello) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *Hello) GetUserName() string {
+	if x != nil {
+		return x.UserName
+	}
+	return ""
+}
+
 type Handshake struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Roots         []*RootEntry           `protobuf:"bytes,1,rep,name=roots,proto3" json:"roots,omitempty"`
 	TotalSize     int64                  `protobuf:"varint,2,opt,name=total_size,json=totalSize,proto3" json:"total_size,omitempty"`
 	ChunkSize     int32                  `protobuf:"varint,3,opt,name=chunk_size,json=chunkSize,proto3" json:"chunk_size,omitempty"`
-	ParallelChunk int32                  `protobuf:"varint,4,opt,name=parallel_chunk,json=parallelChunk,proto3" json:"parallel_chunk,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Handshake) Reset() {
 	*x = Handshake{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[1]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +561,7 @@ func (x *Handshake) String() string {
 func (*Handshake) ProtoMessage() {}
 
 func (x *Handshake) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[1]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +574,7 @@ func (x *Handshake) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Handshake.ProtoReflect.Descriptor instead.
 func (*Handshake) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{1}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Handshake) GetRoots() []*RootEntry {
@@ -512,13 +598,6 @@ func (x *Handshake) GetChunkSize() int32 {
 	return 0
 }
 
-func (x *Handshake) GetParallelChunk() int32 {
-	if x != nil {
-		return x.ParallelChunk
-	}
-	return 0
-}
-
 type RootEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -532,7 +611,7 @@ type RootEntry struct {
 
 func (x *RootEntry) Reset() {
 	*x = RootEntry{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[2]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -544,7 +623,7 @@ func (x *RootEntry) String() string {
 func (*RootEntry) ProtoMessage() {}
 
 func (x *RootEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[2]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -557,7 +636,7 @@ func (x *RootEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RootEntry.ProtoReflect.Descriptor instead.
 func (*RootEntry) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{2}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RootEntry) GetId() string {
@@ -607,7 +686,7 @@ type FileMeta struct {
 
 func (x *FileMeta) Reset() {
 	*x = FileMeta{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[3]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -619,7 +698,7 @@ func (x *FileMeta) String() string {
 func (*FileMeta) ProtoMessage() {}
 
 func (x *FileMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[3]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -632,7 +711,7 @@ func (x *FileMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileMeta.ProtoReflect.Descriptor instead.
 func (*FileMeta) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{3}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *FileMeta) GetId() string {
@@ -671,15 +750,14 @@ type Chunk struct {
 	Total         int32                  `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
 	Offset        int64                  `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
 	Size          int64                  `protobuf:"varint,6,opt,name=size,proto3" json:"size,omitempty"`
-	Data          []byte                 `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty"`
-	Checksum      string                 `protobuf:"bytes,8,opt,name=checksum,proto3" json:"checksum,omitempty"`
+	Checksum      string                 `protobuf:"bytes,7,opt,name=checksum,proto3" json:"checksum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Chunk) Reset() {
 	*x = Chunk{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[4]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -691,7 +769,7 @@ func (x *Chunk) String() string {
 func (*Chunk) ProtoMessage() {}
 
 func (x *Chunk) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[4]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -704,7 +782,7 @@ func (x *Chunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Chunk.ProtoReflect.Descriptor instead.
 func (*Chunk) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{4}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Chunk) GetRootId() string {
@@ -749,13 +827,6 @@ func (x *Chunk) GetSize() int64 {
 	return 0
 }
 
-func (x *Chunk) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
 func (x *Chunk) GetChecksum() string {
 	if x != nil {
 		return x.Checksum
@@ -775,7 +846,7 @@ type Ack struct {
 
 func (x *Ack) Reset() {
 	*x = Ack{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[5]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -787,7 +858,7 @@ func (x *Ack) String() string {
 func (*Ack) ProtoMessage() {}
 
 func (x *Ack) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[5]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -800,7 +871,7 @@ func (x *Ack) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ack.ProtoReflect.Descriptor instead.
 func (*Ack) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{5}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Ack) GetFileId() string {
@@ -841,7 +912,7 @@ type Resume struct {
 
 func (x *Resume) Reset() {
 	*x = Resume{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[6]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -853,7 +924,7 @@ func (x *Resume) String() string {
 func (*Resume) ProtoMessage() {}
 
 func (x *Resume) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[6]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -866,7 +937,7 @@ func (x *Resume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resume.ProtoReflect.Descriptor instead.
 func (*Resume) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{6}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Resume) GetFileId() string {
@@ -895,7 +966,7 @@ type Control struct {
 
 func (x *Control) Reset() {
 	*x = Control{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[7]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -907,7 +978,7 @@ func (x *Control) String() string {
 func (*Control) ProtoMessage() {}
 
 func (x *Control) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[7]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -920,7 +991,7 @@ func (x *Control) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Control.ProtoReflect.Descriptor instead.
 func (*Control) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{7}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Control) GetAction() ControlAction {
@@ -961,7 +1032,7 @@ type FileControl struct {
 
 func (x *FileControl) Reset() {
 	*x = FileControl{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[8]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -973,7 +1044,7 @@ func (x *FileControl) String() string {
 func (*FileControl) ProtoMessage() {}
 
 func (x *FileControl) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[8]
+	mi := &file_internal_transport_pb_transfer_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -986,7 +1057,7 @@ func (x *FileControl) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileControl.ProtoReflect.Descriptor instead.
 func (*FileControl) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{8}
+	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *FileControl) GetFileId() string {
@@ -1003,84 +1074,37 @@ func (x *FileControl) GetAllowed() bool {
 	return false
 }
 
-type Done struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Done) Reset() {
-	*x = Done{}
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Done) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Done) ProtoMessage() {}
-
-func (x *Done) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_transport_pb_transfer_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Done.ProtoReflect.Descriptor instead.
-func (*Done) Descriptor() ([]byte, []int) {
-	return file_internal_transport_pb_transfer_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *Done) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *Done) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 var File_internal_transport_pb_transfer_proto protoreflect.FileDescriptor
 
 const file_internal_transport_pb_transfer_proto_rawDesc = "" +
 	"\n" +
-	"$internal/transport/pb/transfer.proto\x12\ttransport\"\xfe\x02\n" +
+	"$internal/transport/pb/transfer.proto\x12\ttransport\"\x94\x03\n" +
 	"\aMessage\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x05R\aversion\x12*\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x16.transport.MessageTypeR\x04type\x12\x0e\n" +
 	"\x02id\x18\x03 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x04 \x01(\tR\tsessionId\x124\n" +
-	"\thandshake\x18\x05 \x01(\v2\x14.transport.HandshakeH\x00R\thandshake\x12(\n" +
-	"\x05chunk\x18\x06 \x01(\v2\x10.transport.ChunkH\x00R\x05chunk\x12\"\n" +
-	"\x03ack\x18\a \x01(\v2\x0e.transport.AckH\x00R\x03ack\x12+\n" +
-	"\x06resume\x18\b \x01(\v2\x11.transport.ResumeH\x00R\x06resume\x12.\n" +
-	"\acontrol\x18\t \x01(\v2\x12.transport.ControlH\x00R\acontrol\x12\x12\n" +
-	"\x04done\x18\n" +
-	" \x01(\bR\x04doneB\t\n" +
-	"\apayload\"\x9c\x01\n" +
+	"session_id\x18\x04 \x01(\tR\tsessionId\x12(\n" +
+	"\x05hello\x18\x05 \x01(\v2\x10.transport.HelloH\x00R\x05hello\x124\n" +
+	"\thandshake\x18\x06 \x01(\v2\x14.transport.HandshakeH\x00R\thandshake\x12(\n" +
+	"\x05chunk\x18\a \x01(\v2\x10.transport.ChunkH\x00R\x05chunk\x12\"\n" +
+	"\x03ack\x18\b \x01(\v2\x0e.transport.AckH\x00R\x03ack\x12+\n" +
+	"\x06resume\x18\t \x01(\v2\x11.transport.ResumeH\x00R\x06resume\x12.\n" +
+	"\acontrol\x18\n" +
+	" \x01(\v2\x12.transport.ControlH\x00R\acontrolB\t\n" +
+	"\apayload\"v\n" +
+	"\x05Hello\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\x05R\x04port\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\x12\x1b\n" +
+	"\tuser_name\x18\x05 \x01(\tR\buserName\"u\n" +
 	"\tHandshake\x12*\n" +
 	"\x05roots\x18\x01 \x03(\v2\x14.transport.RootEntryR\x05roots\x12\x1d\n" +
 	"\n" +
 	"total_size\x18\x02 \x01(\x03R\ttotalSize\x12\x1d\n" +
 	"\n" +
-	"chunk_size\x18\x03 \x01(\x05R\tchunkSize\x12%\n" +
-	"\x0eparallel_chunk\x18\x04 \x01(\x05R\rparallelChunk\"\x9c\x01\n" +
+	"chunk_size\x18\x03 \x01(\x05R\tchunkSize\"\x9c\x01\n" +
 	"\tRootEntry\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12,\n" +
@@ -1091,16 +1115,15 @@ const file_internal_transport_pb_transfer_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x12\n" +
 	"\x04size\x18\x03 \x01(\x03R\x04size\x12\x1a\n" +
-	"\bchecksum\x18\x04 \x01(\tR\bchecksum\"\xc1\x01\n" +
+	"\bchecksum\x18\x04 \x01(\tR\bchecksum\"\xad\x01\n" +
 	"\x05Chunk\x12\x17\n" +
 	"\aroot_id\x18\x01 \x01(\tR\x06rootId\x12\x17\n" +
 	"\afile_id\x18\x02 \x01(\tR\x06fileId\x12\x14\n" +
 	"\x05index\x18\x03 \x01(\x05R\x05index\x12\x14\n" +
 	"\x05total\x18\x04 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06offset\x18\x05 \x01(\x03R\x06offset\x12\x12\n" +
-	"\x04size\x18\x06 \x01(\x03R\x04size\x12\x12\n" +
-	"\x04data\x18\a \x01(\fR\x04data\x12\x1a\n" +
-	"\bchecksum\x18\b \x01(\tR\bchecksum\"Z\n" +
+	"\x04size\x18\x06 \x01(\x03R\x04size\x12\x1a\n" +
+	"\bchecksum\x18\a \x01(\tR\bchecksum\"Z\n" +
 	"\x03Ack\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x14\n" +
 	"\x05index\x18\x02 \x01(\x05R\x05index\x12\x0e\n" +
@@ -1116,21 +1139,19 @@ const file_internal_transport_pb_transfer_proto_rawDesc = "" +
 	"\adetails\x18\x04 \x01(\tR\adetails\"@\n" +
 	"\vFileControl\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x18\n" +
-	"\aallowed\x18\x02 \x01(\bR\aallowed\":\n" +
-	"\x04Done\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage*3\n" +
+	"\aallowed\x18\x02 \x01(\bR\aallowed*3\n" +
 	"\bProtocol\x12\x17\n" +
 	"\x13VERSION_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
-	"VERSION_V1\x10\x01*\xa6\x01\n" +
+	"VERSION_V1\x10\x01*\xbe\x01\n" +
 	"\vMessageType\x12\x1c\n" +
-	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16MESSAGE_TYPE_HANDSHAKE\x10\x01\x12\x16\n" +
-	"\x12MESSAGE_TYPE_CHUNK\x10\x02\x12\x14\n" +
-	"\x10MESSAGE_TYPE_ACK\x10\x03\x12\x18\n" +
-	"\x14MESSAGE_TYPE_CONTROL\x10\x04\x12\x15\n" +
-	"\x11MESSAGE_TYPE_DONE\x10\x05*\xa0\x01\n" +
+	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12MESSAGE_TYPE_HELLO\x10\x01\x12\x1a\n" +
+	"\x16MESSAGE_TYPE_HANDSHAKE\x10\x02\x12\x16\n" +
+	"\x12MESSAGE_TYPE_CHUNK\x10\x03\x12\x14\n" +
+	"\x10MESSAGE_TYPE_ACK\x10\x04\x12\x18\n" +
+	"\x14MESSAGE_TYPE_CONTROL\x10\x05\x12\x15\n" +
+	"\x11MESSAGE_TYPE_DONE\x10\x06*\xa0\x01\n" +
 	"\rControlAction\x12\x1e\n" +
 	"\x1aCONTROL_ACTION_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cCONTROL_ACTION_HANDSHAKE_ACK\x10\x01\x12\x18\n" +
@@ -1168,34 +1189,35 @@ var file_internal_transport_pb_transfer_proto_goTypes = []any{
 	(RootEntryType)(0),  // 3: transport.RootEntryType
 	(PermissionMode)(0), // 4: transport.PermissionMode
 	(*Message)(nil),     // 5: transport.Message
-	(*Handshake)(nil),   // 6: transport.Handshake
-	(*RootEntry)(nil),   // 7: transport.RootEntry
-	(*FileMeta)(nil),    // 8: transport.FileMeta
-	(*Chunk)(nil),       // 9: transport.Chunk
-	(*Ack)(nil),         // 10: transport.Ack
-	(*Resume)(nil),      // 11: transport.Resume
-	(*Control)(nil),     // 12: transport.Control
-	(*FileControl)(nil), // 13: transport.FileControl
-	(*Done)(nil),        // 14: transport.Done
+	(*Hello)(nil),       // 6: transport.Hello
+	(*Handshake)(nil),   // 7: transport.Handshake
+	(*RootEntry)(nil),   // 8: transport.RootEntry
+	(*FileMeta)(nil),    // 9: transport.FileMeta
+	(*Chunk)(nil),       // 10: transport.Chunk
+	(*Ack)(nil),         // 11: transport.Ack
+	(*Resume)(nil),      // 12: transport.Resume
+	(*Control)(nil),     // 13: transport.Control
+	(*FileControl)(nil), // 14: transport.FileControl
 }
 var file_internal_transport_pb_transfer_proto_depIdxs = []int32{
 	1,  // 0: transport.Message.type:type_name -> transport.MessageType
-	6,  // 1: transport.Message.handshake:type_name -> transport.Handshake
-	9,  // 2: transport.Message.chunk:type_name -> transport.Chunk
-	10, // 3: transport.Message.ack:type_name -> transport.Ack
-	11, // 4: transport.Message.resume:type_name -> transport.Resume
-	12, // 5: transport.Message.control:type_name -> transport.Control
-	7,  // 6: transport.Handshake.roots:type_name -> transport.RootEntry
-	3,  // 7: transport.RootEntry.type:type_name -> transport.RootEntryType
-	8,  // 8: transport.RootEntry.files:type_name -> transport.FileMeta
-	2,  // 9: transport.Control.action:type_name -> transport.ControlAction
-	13, // 10: transport.Control.files:type_name -> transport.FileControl
-	4,  // 11: transport.Control.mode:type_name -> transport.PermissionMode
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	6,  // 1: transport.Message.hello:type_name -> transport.Hello
+	7,  // 2: transport.Message.handshake:type_name -> transport.Handshake
+	10, // 3: transport.Message.chunk:type_name -> transport.Chunk
+	11, // 4: transport.Message.ack:type_name -> transport.Ack
+	12, // 5: transport.Message.resume:type_name -> transport.Resume
+	13, // 6: transport.Message.control:type_name -> transport.Control
+	8,  // 7: transport.Handshake.roots:type_name -> transport.RootEntry
+	3,  // 8: transport.RootEntry.type:type_name -> transport.RootEntryType
+	9,  // 9: transport.RootEntry.files:type_name -> transport.FileMeta
+	2,  // 10: transport.Control.action:type_name -> transport.ControlAction
+	14, // 11: transport.Control.files:type_name -> transport.FileControl
+	4,  // 12: transport.Control.mode:type_name -> transport.PermissionMode
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_internal_transport_pb_transfer_proto_init() }
@@ -1204,6 +1226,7 @@ func file_internal_transport_pb_transfer_proto_init() {
 		return
 	}
 	file_internal_transport_pb_transfer_proto_msgTypes[0].OneofWrappers = []any{
+		(*Message_Hello)(nil),
 		(*Message_Handshake)(nil),
 		(*Message_Chunk)(nil),
 		(*Message_Ack)(nil),

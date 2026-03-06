@@ -11,11 +11,12 @@ enum Protocol {
 
 enum MessageType {
   MESSAGE_TYPE_UNSPECIFIED = 0;
-  MESSAGE_TYPE_HANDSHAKE = 1;
-  MESSAGE_TYPE_CHUNK = 2;
-  MESSAGE_TYPE_ACK = 3;
-  MESSAGE_TYPE_CONTROL = 4;
-  MESSAGE_TYPE_DONE = 5;
+  MESSAGE_TYPE_HELLO = 1;
+  MESSAGE_TYPE_HANDSHAKE = 2;
+  MESSAGE_TYPE_CHUNK = 3;
+  MESSAGE_TYPE_ACK = 4;
+  MESSAGE_TYPE_CONTROL = 5;
+  MESSAGE_TYPE_DONE = 6;
 }
 
 enum ControlAction {
@@ -46,21 +47,27 @@ message Message {
   string session_id = 4;
 
   oneof payload {
-    Handshake handshake = 5;
-    Chunk chunk = 6;
-    Ack ack = 7;
-    Resume resume = 8;
-    Control control = 9;
+    Hello hello = 5;
+    Handshake handshake = 6;
+    Chunk chunk = 7;
+    Ack ack = 8;
+    Resume resume = 9;
+    Control control = 10;
   }
+}
 
-  bool done = 10;
+message Hello {
+  string id = 1;
+  string name = 2;
+  int32 port = 3;
+  string version = 4;
+  string user_name = 5;
 }
 
 message Handshake {
   repeated RootEntry roots = 1;
   int64 total_size = 2;
   int32 chunk_size = 3;
-  int32 parallel_chunk = 4;
 }
 
 message RootEntry {
@@ -85,8 +92,7 @@ message Chunk {
   int32 total = 4;
   int64 offset = 5;
   int64 size = 6;
-  bytes data = 7;
-  string checksum = 8;
+  string checksum = 7;
 }
 
 message Ack {
@@ -111,9 +117,4 @@ message Control {
 message FileControl {
   string file_id = 1;
   bool allowed = 2;
-}
-
-message Done {
-  bool success = 1;
-  string message = 2;
 }

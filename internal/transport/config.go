@@ -6,6 +6,6 @@ type SessionConfig struct {
 
 func DefaultConfig() SessionConfig {
 	return SessionConfig{
-		ChunkSize: 1024 * 1024,
+		ChunkSize: 512 * 1024,
 	}
 }
