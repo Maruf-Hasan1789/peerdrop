@@ -137,7 +137,7 @@ func (a *App) bindSession(p *session.PeerSession) {
 	})
 
 	p.OnTransferProgress(func(peerId string, transferId string, rootId string, rootName string, progress float64) {
-		log.Printf("On Transfer Progress \n")
+		//log.Printf("On Transfer Progress \n")
 		runtime.EventsEmit(a.ctx, "transfer-progress", map[string]string{
 			"id":         rootId,
 			"peerId":     peerId,
