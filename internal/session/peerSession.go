@@ -412,9 +412,9 @@ func (p *PeerSession) Sendfile(transferId string, fileMeta *pb.FileMeta, rootPat
 			TransferredBytes: 0,
 			LastEmit:         time.Now(),
 		}
-
+		p.mu.Lock()
 		p.rootSendingProgress[rootId] = rootSendProgress
-
+		p.mu.Unlock()
 		if p.onTransferStart != nil {
 			p.onTransferStart(peerId, transferId, rootId, rootEntry.Name)
 		}
