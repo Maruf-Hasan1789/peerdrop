@@ -461,7 +461,7 @@ func (a *App) ReceiveFilePermission(peerId string, transferId string, permResp F
 	}
 	log.Printf("Permission Response %v\n", permissionResponse.GetPayload())
 
-	err := p.session.Send(permissionResponse)
+	err := p.session.Send(permissionResponse, nil)
 	log.Printf("Sending permission response %v\n", permissionResponse.GetPayload())
 	if err != nil {
 		log.Printf("Error sending permission response: %v\n", err)

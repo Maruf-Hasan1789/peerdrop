@@ -2,16 +2,16 @@ package discovery
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/grandcat/zeroconf"
+	"github.com/labstack/gommon/log"
 )
 
 func (d *Discovery) Browse(ctx context.Context, selfPeer Peer) error {
 	time.Sleep(10 * time.Second)
 
-	log.Printf("Started browsing")
+	//log.Printf("Started browsing")
 
 	ifaces, err := getSecureLANInterfaces()
 
@@ -47,9 +47,7 @@ func (d *Discovery) consumeEntries(ctx context.Context, entries <-chan *zeroconf
 				continue
 			}
 
-			log.Printf("New  Peer: %v \n", peer)
 			d.addOrUpdatePeer(peer)
-			log.Printf("Add or update Peer Below %v\n", peer)
 			d.NotifyOnPeerAdd(*peer)
 		}
 	}

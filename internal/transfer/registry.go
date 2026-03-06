@@ -2,8 +2,6 @@ package transfer
 
 import (
 	"sync"
-
-	"github.com/labstack/gommon/log"
 )
 
 type Registry struct {
@@ -20,7 +18,7 @@ func NewRegistry() *Registry {
 }
 
 func (r *Registry) PauseAllByPeerId(peerId string) {
-	log.Printf("Pausing by peer %s", peerId)
+	//log.Printf("Pausing by peer %s", peerId)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -32,7 +30,7 @@ func (r *Registry) PauseAllByPeerId(peerId string) {
 }
 
 func (r *Registry) AddTransferredFile(peerId string, transferId, rootId string, rootName string, status Status, transferredBytes int64, totalBytes int64, direction Direction) *Transfer {
-	log.Printf("Add file when receiving \n")
+	//log.Printf("Add file when receiving \n")
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -57,7 +55,7 @@ func (r *Registry) AddTransferredFile(peerId string, transferId, rootId string, 
 }
 
 func (r *Registry) RemoveFileRegistryUponCompletion(peerId string, rootId string) {
-	log.Printf("Remove file receiving upon completion\n")
+	//log.Printf("Remove file receiving upon completion\n")
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.byRootId, rootId)
@@ -82,7 +80,7 @@ func (r *Registry) GetAllTransfersByPeerId(peerId string) []*Transfer {
 func (r *Registry) UpdateTransferRegistryStatusByRootId(rootId string, status Status) {
 	registry := r.byRootId[rootId]
 	registry.Status = status
-	log.Printf("RootID %v Registry Status %v\n", r.byRootId[rootId].RootID, r.byRootId[rootId].Status)
+	//log.Printf("RootID %v Registry Status %v\n", r.byRootId[rootId].RootID, r.byRootId[rootId].Status)
 }
 
 func (r *Registry) GetTransferRegistryByRootId(rootId string) *Transfer {

@@ -3,10 +3,10 @@ package discovery
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/grandcat/zeroconf"
+	"github.com/labstack/gommon/log"
 )
 
 func (d *Discovery) Register(ctx context.Context, selfPeer *Peer, userName string) error {
