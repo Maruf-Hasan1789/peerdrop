@@ -232,7 +232,6 @@ func (p *PeerSession) handleControl(msg *pb.Message, payload []byte, downloadPat
 }
 
 func (p *PeerSession) Send(msg *pb.Message, payload []byte) error {
-	log.Printf("Here msg chunk Index = %v\n", msg.GetChunk().GetIndex())
 	header, err := proto.Marshal(msg)
 
 	if err != nil {
