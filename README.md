@@ -10,6 +10,24 @@ No cloud. No servers. Just direct LAN transfers using **mDNS** for peer discover
 
 ---
 
+## 📸 Screenshots
+
+Here’s a quick look at PeerDrop in action:
+
+<!-- Show only two thumbnails -->
+[![Screenshot 1](./assets/screenshots/1.png)](./assets/screenshots/1.png)
+[![Screenshot 2](./assets/screenshots/2.png)](./assets/screenshots/2.png)
+[![Screenshot 2](./assets/screenshots/7.png)](./assets/screenshots/7.png)
+
+<!-- Optional: hidden links for the rest -->
+[Screenshot 3](./assets/screenshots/3.png)  
+[Screenshot 4](./assets/screenshots/4.png)  
+[Screenshot 5](./assets/screenshots/5.png)  
+[Screenshot 6](./assets/screenshots/6.png)  
+
+[Screenshot 8](./assets/screenshots/8.png)  
+[Screenshot 9](./assets/screenshots/9.png)
+
 ## 🚀 Why PeerDrop?
 
 * Transfer files directly over LAN
