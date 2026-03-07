@@ -39,15 +39,33 @@ Download the latest pre-built releases here:
 
 ---
 
-## 🏗 Tech Stack
-
-* **Backend:** Go
-* **Frontend / UI:** Wails (Vanilla JS + CSS)
-* **Protocol:** TCP
-* **Peer Discovery:** mDNS
-* **Serialization:** JSON
+Got it ✅ — here’s the **updated Tech Stack section ready to paste directly into your README**:
 
 ---
+
+Perfect ✅ — here’s your **full, updated Tech Stack section** formatted professionally for your README, matching the clean table style and including the architectural note. You can just replace your current section with this:
+
+---
+
+## 🛠 Tech Stack
+
+| Component                         | Technology                                      |
+|-----------------------------------|-------------------------------------------------|
+| **Backend Language**              | Go                                              |
+| **Desktop / UI Framework**        | Wails v2 (Vanilla JS + CSS)                     |
+| **Networking Protocol**           | TCP                                             |
+| **Metadata Serialization**        | Protocol Buffers (used exclusively for headers) |
+| **File Transfer Method**          | Raw byte streaming over TCP                     |
+| **Concurrency Model**             | Goroutines and channels                         |
+| **Peer Discovery**                | mDNS on local network                           |
+| **Build & Dependency Management** | Go modules + Wails build system                 |
+
+> **Architectural Note:**
+> PeerDrop uses a **hybrid transfer design**:
+>
+> * **Protobuf** handles metadata, handshake, and control messages for structured communication.
+> * **Raw TCP bytes** are used for transferring file chunks efficiently, reducing serialization overhead for large files.
+
 
 ## 🛠 Installation
 
