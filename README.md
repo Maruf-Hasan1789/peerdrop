@@ -5,16 +5,16 @@
 [![Wails](https://img.shields.io/badge/Wails-v2-blueviolet)](https://wails.io)
 [![Latest Release](https://img.shields.io/github/v/release/Maruf-Hasan1789/peerdrop?include_prereleases)](https://github.com/Maruf-Hasan1789/peerdrop/releases)
 
-**PeerDrop** is a fast, peer-to-peer file transfer tool for local networks.  
+**PeerDrop** is a fast, peer-to-peer file transfer tool for local networks.
 No cloud. No servers. Just direct LAN transfers using **mDNS** for peer discovery.
 
 ---
 
 ## 🚀 Why PeerDrop?
 
-- Transfer files directly over LAN
-- Avoid USB drives and cloud uploads
-- Share builds, logs, and test artifacts instantly
+* Transfer files directly over LAN
+* Avoid USB drives and cloud uploads
+* Share builds, logs, and test artifacts instantly
 
 Designed for **everyone** who needs fast, easy LAN file transfers.
 
@@ -22,11 +22,11 @@ Designed for **everyone** who needs fast, easy LAN file transfers.
 
 ## ✨ Features
 
-- ⚡ Fast file transfer over local network (No Http)
-- 🌐 Automatic peer discovery using **mDNS**
-- 📁 Multiple file selection
-- 🖥 Cross-platform support (Windows, Linux)
-- 🧩 Minimal and intuitive UI
+* ⚡ Fast file transfer over local network (No Http)
+* 🌐 Automatic peer discovery using **mDNS**
+* 📁 Multiple file selection
+* 🖥 Cross-platform support (Windows, Linux)
+* 🧩 Minimal and intuitive UI
 
 > **Note:** Encryption is **not yet implemented**. Transfers occur only over the local network. Avoid untrusted networks.
 
@@ -34,18 +34,18 @@ Designed for **everyone** who needs fast, easy LAN file transfers.
 
 ## 📥 Releases
 
-Download the latest pre-built releases here:  
+Download the latest pre-built releases here:
 👉 [PeerDrop Releases](https://github.com/Maruf-Hasan1789/peerdrop/releases)
 
 ---
 
 ## 🏗 Tech Stack
 
-- **Backend:** Go
-- **Frontend / UI:** Wails (Vanilla JS + CSS)
-- **Protocol:** TCP
-- **Peer Discovery:** mDNS
-- **Serialization:** JSON
+* **Backend:** Go
+* **Frontend / UI:** Wails (Vanilla JS + CSS)
+* **Protocol:** TCP
+* **Peer Discovery:** mDNS
+* **Serialization:** JSON
 
 ---
 
@@ -79,31 +79,33 @@ sudo apt install ./peerdropapp_*.deb
 
 2. **Authorize:**
 
-- Open PeerDrop from Applications
-- When the "unidentified developer" warning appears, click **Done**
-- Go to **System Settings → Privacy & Security**
-- Scroll to the **Security** section
-- Click **Open Anyway**
-- Enter your password and click **Open**
+* Open PeerDrop from Applications
+* When the "unidentified developer" warning appears, click **Done**
+* Go to **System Settings → Privacy & Security**
+* Scroll to the **Security** section
+* Click **Open Anyway**
+* Enter your password and click **Open**
 
 3. **Network Permission**
 
-Allow **Local Network access** when prompted.  
+Allow **Local Network access** when prompted.
 This is required for PeerDrop to discover other devices using **mDNS**.
 
 > **TIP:** Advanced users can bypass the security dialog using:
+
 ```bash
 sudo xattr -rd com.apple.quarantine /Applications/peerdropApp.app
 ```
 
+---
 
 ## 🏗 Build from Source (Optional)
 
 ### Prerequisites
 
-- Go 1.24+
-- Node.js 18+
-- Wails v2
+* Go 1.24+
+* Node.js 18+
+* Wails v2
 
 ### Build
 
@@ -118,6 +120,64 @@ Binary will be generated in:
 ```
 build/bin
 ```
+
+---
+
+## 🧑‍💻 Local Development Setup
+
+If you want to run PeerDrop locally for development or contribute to the project.
+
+### Install Wails (if not installed)
+
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+```
+
+Verify installation:
+
+```bash
+wails doctor
+```
+
+### Run in development mode
+
+```bash
+git clone https://github.com/Maruf-Hasan1789/peerdrop.git
+cd peerdrop
+cd frontend
+npm install
+cd ..
+wails dev
+```
+
+This will start the backend and frontend in development mode with hot reload.
+
+---
+
+## 📂 Project Structure
+
+```
+peerdrop
+├── main.go           # Application entry point
+├── internal/         # Core application logic
+├── frontend/         # UI (Vanilla JS + CSS used by Wails)
+├── build/            # Compiled binaries
+├── docs/             # Project documentation
+├── wails.json        # Wails configuration
+└── go.mod
+```
+
+---
+
+## 📚 Documentation
+
+Detailed documentation is available in the **docs** directory.
+
+Examples:
+
+* Architecture
+* File Transfer Protocol
+* Development Guide
 
 ---
 
@@ -154,9 +214,9 @@ Implement your feature, fix, or improvement.
 
 Please ensure:
 
-- The project builds successfully
-- Changes are focused and minimal
-- No unrelated files are modified
+* The project builds successfully
+* Changes are focused and minimal
+* No unrelated files are modified
 
 ---
 
@@ -186,16 +246,16 @@ Go to the main repository and open a **Pull Request** describing your changes.
 
 If you encounter a bug, please create an **Issue** and include:
 
-- Operating system
-- Steps to reproduce
-- Expected behavior
-- Logs or screenshots if available
+* Operating system
+* Steps to reproduce
+* Expected behavior
+* Logs or screenshots if available
 
 ---
 
 ## 💡 Feature Requests
 
-Feature suggestions are welcome.  
+Feature suggestions are welcome.
 Open an **Issue** describing the idea and use case.
 
 ---
@@ -204,8 +264,8 @@ Open an **Issue** describing the idea and use case.
 
 If you find **PeerDrop** useful:
 
-- ⭐ Star the repository
-- Share it with others
-- Report bugs or improvements
+* ⭐ Star the repository
+* Share it with others
+* Report bugs or improvements
 
 Your support helps the project grow 🚀
