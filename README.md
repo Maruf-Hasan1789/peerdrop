@@ -52,47 +52,160 @@ Download the latest pre-built releases here:
 ## 🛠 Installation
 
 ### Ubuntu / Linux
-1. Download the .deb from [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases).
-2. Then run the command
+
+1. Download the `.deb` from the [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases)
+
+2. Install using:
+
 ```bash
-sudo apt install peerdropapp
+sudo apt install ./peerdropapp_*.deb
 ```
 
-3. It may require you install other dependencies if not found.
+3. Install any required dependencies if prompted.
+
+---
 
 ### Windows
 
-1. Download the installer from the [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases).
-2. Run the installer and follow the prompts.
+1. Download the installer from the [Releases page](https://github.com/Maruf-Hasan1789/peerdrop/releases)
+2. Run the installer and follow the prompts
 3. Allow permissions for private and public networks
 
+---
 
 ### macOS Installation
 
 1. **Install:** Open the `.dmg` and drag **PeerDrop** to your **Applications** folder.
-2. **Authorize:** * Open PeerDrop from your Applications folder. When the "unidentified developer" block appears, click **Done**.
-    * Go to **System Settings > Privacy & Security**.
-    * Scroll down to the **Security** section and click **Open Anyway**.
-    * Enter your password and click **Open**.
-3. **Network:** Click **Allow** when asked for **Local Network** permissions. This is required for PeerDrop to find other devices via mDNS.
 
-> [!TIP]
-> **Advanced Users:** To skip the security steps above, run this in Terminal after moving the app to Applications:  
-> `sudo xattr -rd com.apple.quarantine /Applications/peerdropApp.app`
----
-App may behave unexpectedly in macOS as I couldn't do proper testing.
-### Build from Source (Optional)
+2. **Authorize:**
 
-#### Prerequisites
+- Open PeerDrop from Applications
+- When the "unidentified developer" warning appears, click **Done**
+- Go to **System Settings → Privacy & Security**
+- Scroll to the **Security** section
+- Click **Open Anyway**
+- Enter your password and click **Open**
+
+3. **Network Permission**
+
+Allow **Local Network access** when prompted.  
+This is required for PeerDrop to discover other devices using **mDNS**.
+
+> **TIP:** Advanced users can bypass the security dialog using:
+```bash
+sudo xattr -rd com.apple.quarantine /Applications/peerdropApp.app
+```
+
+
+## 🏗 Build from Source (Optional)
+
+### Prerequisites
 
 - Go 1.24+
 - Node.js 18+
 - Wails v2
 
-#### Build Steps
+### Build
 
 ```bash
 git clone https://github.com/Maruf-Hasan1789/peerdrop.git
 cd peerdrop
 wails build
-# Binary will be in the 'build/bin' folder
+```
+
+Binary will be generated in:
+
+```
+build/bin
+```
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome! If you'd like to improve **PeerDrop**, follow these steps.
+
+### 1️⃣ Fork the Repository
+
+Click the **Fork** button on the repository page.
+
+---
+
+### 2️⃣ Clone Your Fork
+
+```bash
+git clone https://github.com/YOUR_USERNAME/peerdrop.git
+cd peerdrop
+```
+
+---
+
+### 3️⃣ Create a Branch
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+---
+
+### 4️⃣ Make Changes
+
+Implement your feature, fix, or improvement.
+
+Please ensure:
+
+- The project builds successfully
+- Changes are focused and minimal
+- No unrelated files are modified
+
+---
+
+### 5️⃣ Commit Changes
+
+```bash
+git commit -m "Peerdrop: short description of change"
+```
+
+---
+
+### 6️⃣ Push to GitHub
+
+```bash
+git push origin feature/your-feature-name
+```
+
+---
+
+### 7️⃣ Open a Pull Request
+
+Go to the main repository and open a **Pull Request** describing your changes.
+
+---
+
+## 🐞 Reporting Bugs
+
+If you encounter a bug, please create an **Issue** and include:
+
+- Operating system
+- Steps to reproduce
+- Expected behavior
+- Logs or screenshots if available
+
+---
+
+## 💡 Feature Requests
+
+Feature suggestions are welcome.  
+Open an **Issue** describing the idea and use case.
+
+---
+
+## ⭐ Support the Project
+
+If you find **PeerDrop** useful:
+
+- ⭐ Star the repository
+- Share it with others
+- Report bugs or improvements
+
+Your support helps the project grow 🚀
