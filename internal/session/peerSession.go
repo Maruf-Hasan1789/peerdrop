@@ -280,17 +280,17 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 
 			ctx.Done()
 		} else if control.GetMode() == pb.PermissionMode_PERMISSION_MODE_ALL {
-			var wg sync.WaitGroup
-			startingTime := time.Now()
+			//var wg sync.WaitGroup
+			//startingTime := time.Now()
 			for _, rootEntry := range rootEntries {
-				wg.Add(1)
+				//wg.Add(1)
 				rootPath := p.rootPaths[rootEntry.GetId()]
 				//log.Printf("Here rootPath %v\n", rootPath)
-				go p.SendRootEntry(transferId, rootEntry, rootPath, &wg)
+				go p.SendRootEntry(transferId, rootEntry, rootPath)
 			}
-			wg.Wait()
-			totalTime := time.Since(startingTime).Seconds()
-			log.Printf("Here total time %v seconds\n", totalTime)
+			//wg.Wait()
+			//totalTime := time.Since(startingTime).Seconds()
+			//log.Printf("Here total time %v seconds\n", totalTime)
 		} else {
 			//log.Printf("Partial Permission is allowed\n")
 
@@ -304,22 +304,22 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 				}
 			}
 
-			var wg sync.WaitGroup
-			startingTime := time.Now()
+			//var wg sync.WaitGroup
+			//startingTime := time.Now()
 			for _, rootEntry := range rootEntries {
 
 				isAllowed, ok := allowedRootID[rootEntry.GetId()]
 				if !ok || !isAllowed {
 					continue
 				}
-				wg.Add(1)
+				//wg.Add(1)
 				rootPath := p.rootPaths[rootEntry.GetId()]
-				go p.SendRootEntry(transferId, rootEntry, rootPath, &wg)
+				go p.SendRootEntry(transferId, rootEntry, rootPath)
 			}
 
-			wg.Wait()
-			totalTime := time.Since(startingTime).Seconds()
-			log.Printf("Here total time %v seconds\n", totalTime)
+			//wg.Wait()
+			//totalTime := time.Since(startingTime).Seconds()
+			//log.Printf("Here total time %v seconds\n", totalTime)
 			//close(fileResultCh)
 		}
 	case <-ctx.Done():
@@ -329,8 +329,8 @@ func (p *PeerSession) SendToPeer(transferId string, filePaths []string) error {
 	return nil
 }
 
-func (p *PeerSession) SendRootEntry(transferId string, rootEntry *pb.RootEntry, rootPath string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (p *PeerSession) SendRootEntry(transferId string, rootEntry *pb.RootEntry, rootPath string) {
+	//defer wg.Done()
 
 	for _, file := range rootEntry.Files {
 		err := p.Sendfile(transferId, file, rootPath, rootEntry)
