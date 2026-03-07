@@ -189,15 +189,12 @@ peerdrop
 
 ## 📚 Documentation
 
-Detailed documentation is available in the **docs** directory.
+Detailed documentation is available in the **[docs](./docs)** directory.
 
-Examples:
-
-* Architecture
-* File Transfer Protocol
-* Development Guide
-
----
+- **[Architecture](./docs/architecture.md)** – Learn about the internal structure, modules, and data flow.
+- **[File Transfer Protocol](./docs/file-transfer-protocol.md)** – Explanation of chunked file transfer, resume support, and network handling.
+- **[Development Guide](./docs/development-guide.md)** – Step-by-step setup, build instructions, and contribution guidelines.
+- **[FAQ](./docs/faq.md)** – Common questions and troubleshooting tips.
 
 # 🤝 Contributing
 
@@ -287,3 +284,11 @@ If you find **PeerDrop** useful:
 * Report bugs or improvements
 
 Your support helps the project grow 🚀
+
+## Contributors
+
+<a href="https://github.com/Maruf-Hasan1789/peerdrop/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Maruf-Hasan1789/peerdrop" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
