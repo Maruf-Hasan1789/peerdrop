@@ -14,9 +14,10 @@ EventsOn("permission-request", (senderInfo) => {
 });
 
 const PermissionMode = {
-    None: 0,
-    Partial: 1,
-    All: 2
+    Unspecified: 0,
+    None: 1,
+    Partial: 2,
+    All: 3
 };
 
 
@@ -142,7 +143,7 @@ function showPermissionPopup(sender) {
                 }
             });
         }
-
+        console.log("Permission State : ", permissionState)
         ReceiveFilePermission(sender.id, sender.transfer_id, permissionState)
             .then(() => {
                 console.log(`Permission sent: ${mode}`);
