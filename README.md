@@ -290,5 +290,3 @@ Your support helps the project grow 🚀
 <a href="https://github.com/Maruf-Hasan1789/peerdrop/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Maruf-Hasan1789/peerdrop" />
 </a>
-
-Made with [contrib.rocks](https://contrib.rocks).
