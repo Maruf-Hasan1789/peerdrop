@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package transport;
+
+option go_package = "github.com/Maruf-Hasan1789/peerdrop/internal/transport/pb";
+
+enum Protocol {
+  VERSION_UNSPECIFIED = 0;
+  VERSION_V1 = 1;
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_HELLO = 1;
+  MESSAGE_TYPE_HANDSHAKE = 2;
+  MESSAGE_TYPE_CHUNK = 3;
+  MESSAGE_TYPE_ACK = 4;
+  MESSAGE_TYPE_CONTROL = 5;
+  MESSAGE_TYPE_DONE = 6;
+}
+
+enum ControlAction {
+  CONTROL_ACTION_UNSPECIFIED = 0;
+  CONTROL_ACTION_HANDSHAKE_ACK = 1;
+  CONTROL_ACTION_PAUSE = 2;
+  CONTROL_ACTION_RESUME = 3;
+  CONTROL_ACTION_ERROR = 4;
+}
+
+enum RootEntryType {
+  ROOT_ENTRY_TYPE_UNSPECIFIED = 0;
+  ROOT_ENTRY_TYPE_FILE = 1;
+  ROOT_ENTRY_TYPE_DIRECTORY = 2;
+}
+
+enum PermissionMode {
+  PERMISSION_MODE_UNSPECIFIED = 0;
+  PERMISSION_MODE_NONE = 1;
+  PERMISSION_MODE_PARTIAL = 2;
+  PERMISSION_MODE_ALL = 3;
+}
+
+message Message {
+  int32 version = 1;
+  MessageType type = 2;
+  string id = 3; //transfer id
+  string session_id = 4;
+
+  oneof payload {
+    Hello hello = 5;
+    Handshake handshake = 6;
+    Chunk chunk = 7;
+    Ack ack = 8;
+    Resume resume = 9;
+    Control control = 10;
+  }
+}
+
+message Hello {
+  string id = 1;
+  string name = 2;
+  int32 port = 3;
+  string version = 4;
+  string user_name = 5;
+}
+
+message Handshake {
+  repeated RootEntry roots = 1;
+  int64 total_size = 2;
+  int32 chunk_size = 3;
+}
+
+message RootEntry {
+  string id = 1;
+  string name = 2;
+  RootEntryType type = 3;
+  repeated FileMeta files = 4;
+  int64 size = 5;
+}
+
+message FileMeta {
+  string id = 1;
+  string path = 2;
+  int64 size = 3;
+  string checksum = 4;
+}
+
+message Chunk {
+  string root_id = 1;
+  string file_id = 2;
+  int32 index = 3;
+  int32 total = 4;
+  int64 offset = 5;
+  int64 size = 6;
+  string checksum = 7;
+}
+
+message Ack {
+  string file_id = 1;
+  int32 index = 2;
+  bool ok = 3;
+  string error = 4;
+}
+
+message Resume {
+  string file_id = 1;
+  repeated int32 missing = 2;
+}
+
+message Control {
+  ControlAction action = 1;
+  repeated FileControl files = 2;
+  PermissionMode mode = 3;
+  string details = 4;
+}
+
+message FileControl {
+  string file_id = 1;
+  bool allowed = 2;
+}

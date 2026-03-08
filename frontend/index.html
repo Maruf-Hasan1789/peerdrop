@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeerDrop</title>
+    <link rel="icon" type="image/png" href="src/assets/images/peerdrop.png">
+    <link rel="stylesheet" href="src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          rel="stylesheet">
+</head>
+<body>
+<!-- Fixed Header -->
+<header class="main-header">
+    <div class="header-left">
+        <div class="app-icon-wrapper">
+            <img src="src/assets/images/peerdrop.png" alt="PeerDrop" class="app-icon-img">
+        </div>
+        <div class="app-brand">
+            <span class="app-name">PeerDrop</span>
+            <span class="app-tagline">Send files to peers</span>
+        </div>
+    </div>
+    <div class="header-actions">
+        <button class="icon-btn" id="history-toggle" title="Transfer History" aria-label="Transfer History">
+            <span class="material-symbols-outlined">history</span>
+        </button>
+        <button class="icon-btn" id="settings-toggle" title="Settings" aria-label="Settings">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+    </div>
+</header>
+
+<!-- Main Content Area -->
+<main class="main-content">
+    <div class="columns-wrapper">
+        <!-- Primary Column (70%) -->
+        <div id="main-column" class="primary-column">
+            <!-- Selected Receiver Section -->
+            <section class="receiver-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        Selected Receiver
+                        <span class="status-indicator"></span>
+                    </h2>
+                </div>
+                <div id="selected-peer-card" class="receiver-card empty-state">
+                    <div class="receiver-card-content">
+                        <div class="receiver-avatar">
+                            <span class="material-symbols-outlined">devices</span>
+                        </div>
+                        <div class="receiver-info">
+                            <span id="selected-peer-name" class="receiver-name">No peer selected</span>
+                            <span id="selected-peer-status"
+                                  class="receiver-status">Select a peer from the sidebar</span>
+                        </div>
+                    </div>
+                    <button type="button" id="clear-selection" class="clear-btn" style="display: none;"
+                            aria-label="Clear selection">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <input type="hidden" id="receiver-select" value="">
+            </section>
+
+            <!-- File Upload Zone -->
+            <section class="upload-section">
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon-wrapper">
+                            <span class="material-symbols-outlined upload-icon">cloud_upload</span>
+                        </div>
+                        <p class="drop-zone-text">Drag & drop files here</p>
+                        <div class="browse-wrapper">
+                            <!-- Main Browse Button -->
+                            <button id="browse-dropdown-toggle" class="browse-btn">
+                                <span class="material-symbols-outlined">folder_open</span>
+                                <span>Browse</span>
+                            </button>
+
+                            <!-- Dropdown Menu (hidden by default) -->
+                            <div id="browse-dropdown-menu" class="dropdown-menu">
+                                <button type="button" id="pick-file" class="browse-btn">
+                                    <span class="material-symbols-outlined">folder_open</span>
+                                    <span>Browse Files</span>
+                                </button>
+                                <button type="button" id="pick-folder" class="browse-btn">
+                                    <span class="material-symbols-outlined">folder_open</span>
+                                    <span>Browse Folder</span>
+                                </button>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+
+                <!-- File Info Bar: list fills space, buttons at bottom -->
+                <div id="file-info-bar" class="file-info-bar" style="display: none">
+                    <div class="file-details">
+                        <div id="selectedFileListContainer" class="file-list-scroll"></div>
+                        <div class="file-actions">
+                            <button id="clear-file" class="file-action-btn file-action-clear" type="button" aria-label="Clear selection">
+                                <span class="material-symbols-outlined">delete_sweep</span>
+                                <span>Clear</span>
+                            </button>
+                            <button id="send-btn" class="file-action-btn file-action-send send-btn" type="button" disabled>
+                                <span class="material-symbols-outlined">send</span>
+                                <span>Send All</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Active Transfers Section -->
+            <section class="transfers-section">
+                <div class="section-header">
+                    <h2 class="section-title">Sending</h2>
+                    <div class="transfer-count-badge transfer-count-send" aria-label="Active sends">
+                        <span class="material-symbols-outlined transfer-count-icon">upload</span>
+                        <span id="send-file-count" class="transfer-count-num">0</span>
+                    </div>
+                </div>
+                <div id="transfer-list" class="transfer-list">
+                    <!-- transfer cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Receiving Transfers Section -->
+            <section class="transfers-section" style="margin-top: 2rem;">
+                <div class="section-header">
+                    <h2 class="section-title">Receiving</h2>
+                    <div class="transfer-count-badge transfer-count-receive" aria-label="Active receives">
+                        <span class="material-symbols-outlined transfer-count-icon">download</span>
+                        <span id="receive-count" class="transfer-count-num">0</span>
+                    </div>
+                </div>
+                <div id="receive-list" class="transfer-list">
+                    <!-- Receive cards will be dynamically inserted here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar (30%) -->
+        <aside id="sidebar-column" class="sidebar-column">
+            <header class="sidebar-header">
+                <div class="sidebar-header-top">
+                    <div class="sidebar-title-row">
+                        <span class="material-symbols-outlined sidebar-title-icon">group</span>
+                        <h3 class="sidebar-title">Connected Peers</h3>
+                    </div>
+                    <div class="sidebar-header-meta">
+                        <span class="sidebar-count-badge" aria-label="Peers online">
+                            <span class="material-symbols-outlined sidebar-count-icon">wifi</span>
+                            <span id="active-peer-count" class="sidebar-count-num">0</span>
+                        </span>
+                        <button id="refresh-connected-peer-btn" class="sidebar-refresh-btn" aria-label="Refresh peers">
+                            <span class="material-symbols-outlined">sync</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <div class="peer-list-wrapper">
+                <ul id="peer-list" class="peer-list">
+                    <!-- Peer items will be dynamically inserted here -->
+                </ul>
+                <p id="peer-list-empty" class="peer-list-empty" aria-live="polite">No peers connected. They’ll appear here when available.</p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay">
+    <div class="modal-container settings-modal">
+        <div class="modal-sidebar">
+            <h3 class="modal-sidebar-title">Preferences</h3>
+            <nav class="modal-nav">
+                <button class="modal-nav-item active" data-section="general">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>General</span>
+                </button>
+                <button class="modal-nav-item" data-section="about" id="nav-about">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>About</span>
+                </button>
+            </nav>
+        </div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="settings-section-title">General</h2>
+                <p class="modal-subtitle" id="settings-section-subtitle">Manage basic application preferences</p>
+                <button class="icon-btn-small" id="close-settings" title="Close"
+                        style="position: absolute; right: 2rem; top: 2rem;">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="settings-content">
+
+                <!-- General Section -->
+                <div id="settings-general" class="settings-section active">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label for="userName" class="setting-label">Display Name</label>
+                            <p class="setting-description">How other devices see you on the network</p>
+                        </div>
+                        <input type="text" id="userName" class="setting-input" placeholder="Enter your name">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label for="permissionToggle" class="setting-label">Require Permission</label>
+                            <p class="setting-description">Ask before accepting files from peers</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="permissionToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <label for="downloadPath" class="setting-label">Download Location</label>
+                            <p class="setting-description">Choose where received files are saved by default</p>
+                        </div>
+                        <div class="path-picker">
+                            <input type="text" id="downloadPath" class="setting-input path-input" readonly>
+                            <button id="folderPicker" class="path-browse-btn">
+                                <span class="material-symbols-outlined">folder_open</span>
+                                <span>Browse</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Section -->
+                <div id="settings-about" class="settings-section">
+                    <div id="aboutPage" class="about-container">
+                        <div class="about-hero">
+                            <div class="about-logo">
+                                <img src="src/assets/images/peerdrop.png" alt="PeerDrop" class="about-logo-img">
+                            </div>
+                            <h2 class="about-app-name">PeerDrop</h2>
+                            <span id="aboutVersion" class="about-version">Version 0.1.0</span>
+                        </div>
+
+                        <p id="aboutDescription" class="about-description">
+                            This app began as a spark of an idea from Farhan and was crafted into reality by Maruf.
+                        </p>
+
+                        <div class="about-team">
+
+                            <div class="about-team-card">
+                                <span class="material-symbols-outlined about-team-icon">palette</span>
+                                <div class="about-team-info">
+                                    <span class="about-team-label">Product design</span>
+                                    <a href="https://www.linkedin.com/in/sharior/" id="aboutProductDesigner" target="_blank" class="about-team-link">Sharior Farhan</a>
+                                </div>
+                            </div>
+
+                            <div class="about-team-card">
+                                <span class="material-symbols-outlined about-team-icon">code</span>
+                                <div class="about-team-info">
+                                    <span class="about-team-label">Developed by</span>
+                                    <a href="https://www.linkedin.com/in/marufhasan1789/" id="aboutAuthor" target="_blank" class="about-team-link">Maruf Hasan</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <blockquote class="about-quote">
+                            <span class="material-symbols-outlined about-quote-icon">format_quote</span>
+                            <p>À Mikasa — La vie en rose, toujours.</p>
+                        </blockquote>
+
+                        <div class="about-actions">
+                            <a href="https://github.com/Maruf-Hasan1789/peerdrop" id="aboutGithub" target="_blank" class="about-action-btn">
+                                <span class="material-symbols-outlined">code</span>
+                                <span>GitHub</span>
+                            </a>
+                            <a href="mailto:marufhasan212@gmail.com" id="aboutSupport" class="about-action-btn">
+                                <span class="material-symbols-outlined">mail</span>
+                                <span>Contact Support</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="settingsCancelButton">Cancel</button>
+                <button class="btn btn-primary" id="saveSettingsButton">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer History Modal -->
+<div id="transfer-history-modal" class="modal-overlay">
+    <div class="modal-container history-modal">
+        <header class="history-header">
+            <div class="history-header-top">
+                <div class="history-title-row">
+                    <div class="history-header-icon">
+                        <span class="material-symbols-outlined">history</span>
+                    </div>
+                    <div>
+                        <h2 class="history-title">Transfer History</h2>
+                        <p class="history-subtitle">Past sends and receives</p>
+                    </div>
+                </div>
+                <div class="history-header-actions">
+                    <button id="clear-history-btn" class="history-clear-btn" aria-label="Clear history">
+                        <span class="material-symbols-outlined">delete_sweep</span>
+                        <span>Clear</span>
+                    </button>
+                    <button type="button" class="history-close-btn" id="close-transfer-history" aria-label="Close">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        <div class="history-content">
+            <div class="history-search-wrap">
+                <span class="material-symbols-outlined history-search-icon">search</span>
+                <input type="text" id="history-search" class="history-search-input"
+                       placeholder="Search by filename or peer...">
+            </div>
+            <div class="history-list-container">
+                <ul id="transfer-history-list" class="history-list">
+                    <!-- History items inserted by state.js -->
+                </ul>
+                <p class="history-empty" id="history-empty-msg">No transfer history yet.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Request Modal -->
+<div id="permission-modal" class="modal-overlay">
+    <div class="modal-container permission-modal">
+        <header class="permission-header">
+            <div class="permission-header-icon">
+                <span class="material-symbols-outlined">inbox</span>
+            </div>
+            <div>
+                <h2 class="permission-title">File transfer request</h2>
+                <p class="permission-message message"></p>
+            </div>
+        </header>
+        <div class="permission-content">
+            <ul class="pm-files">
+                <!-- File rows inserted by receiver.js -->
+            </ul>
+        </div>
+        <footer class="permission-footer">
+            <button type="button" class="permission-btn permission-deny" id="deny-btn">
+                <span class="material-symbols-outlined">block</span>
+                <span>Deny</span>
+            </button>
+            <button type="button" class="permission-btn permission-partial" id="partial-permission-btn" disabled>
+                <span class="material-symbols-outlined">checklist</span>
+                <span>Accept selected</span>
+            </button>
+            <button type="button" class="permission-btn permission-allow" id="allow-btn">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>Accept all</span>
+            </button>
+        </footer>
+    </div>
+</div>
+
+<!-- Connection Error Modal -->
+<div id="connection-error-modal" class="modal-overlay">
+    <div class="modal-container error-modal" style="max-width: 400px;">
+        <div class="modal-content" style="text-align: center; padding: 2rem;">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: var(--error); margin-bottom: 1rem;">error</span>
+            <h3 style="margin-bottom: 0.5rem;">Connection Error</h3>
+            <p id="connection-error-msg" style="color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+            <button class="btn btn-primary" id="close-error">Dismiss</button>
+        </div>
+    </div>
+</div>
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

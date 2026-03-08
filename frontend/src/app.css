@@ -1,0 +1,43 @@
+/* Container with flex layout */
+.container {
+    display: flex;
+    height: 100vh;
+    font-family: sans-serif;
+}
+
+/* Main content */
+.main {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Sidebar on the right */
+.sidebar {
+    width: 300px;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-left: 1px solid #ccc;
+    overflow-y: auto;
+}
+
+/* Logo styling */
+.logo {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+/* Lists styling */
+ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+li {
+    padding: 8px 5px;
+    border-bottom: 1px solid #ddd;
+    word-break: break-word;
+}

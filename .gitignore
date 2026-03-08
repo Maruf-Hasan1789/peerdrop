@@ -28,8 +28,15 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 
 # PeerDrop binary
 /peerdrop
+frontend/node_modules
+frontend/dist/
+/build
+# Ignore Wails frontend Go bindings
+frontend/wailsjs/go/
+frontend/wailsjs/runtime
+frontend/package.json.md5
