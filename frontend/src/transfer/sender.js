@@ -1,10 +1,11 @@
 import {EventsOn} from "../../wailsjs/runtime";
 import {DisconnectPeer, PickFiles, PickFolder, SendFileToPeer} from "../../wailsjs/go/app/App";
 import {escapeHtml, fileTypeOf, showToast} from "../utils/utils";
+import {closeModal, onModalDismiss, openModal} from "../core/modal";
 import {createTransferRow, markRowFailed, refreshTransfersPanel, removeRowAnimated, setRowProgress} from "./transfersPanel";
 
 const connectionErrorMsg = document.getElementById('connection-error-msg');
-const connectionErrorModal = document.getElementById('connection-error-modal');
+const ERROR_MODAL_ID = 'connection-error-modal';
 const closeErrorBtn = document.getElementById('close-error');
 const sendFileButton = document.getElementById("send-btn");
 export const receiverSelect = document.getElementById("receiver-select");
@@ -103,18 +104,18 @@ function initSendButton() {
         event.stopPropagation();
         try {
             if (receiverSelect.value === "") {
-                showToast("Select a peer", "Select a peer from the sidebar first.");
+                showToast("Choose a device first", "Pick who to send to from Nearby devices.", "info");
                 return;
             }
             if (filePath.size === 0) {
-                showToast("No files", "Add files to send first.");
+                showToast("No files selected", "Drop files here or use Browse.", "info");
                 return;
             }
 
             const receiverId = receiverSelect.value;
             const paths = Array.from(filePath).filter(p => typeof p === "string" && p.trim().length > 0);
             if (paths.length === 0) {
-                showToast("Invalid paths", "No valid file paths to send.");
+                showToast("Couldn't read those files", "Try selecting them again.", "error");
                 return;
             }
 
@@ -122,7 +123,7 @@ function initSendButton() {
             resetFileSelection();
         } catch (err) {
             console.error("Error while sending file:", err);
-            showConnectionError("Connection lost! File transfer failed.");
+            showConnectionError("The connection to the device was lost before the transfer started. Check that it's still on the same network.");
         }
     });
 }
@@ -161,8 +162,9 @@ EventsOn("transfer-failed", (payload) => {
     console.log(payload);
     cancelTransfer(payload.transferId, payload.reason ?? "backend-failed");
     showToast(
-        "File transfer failed",
-        `Receiver disconnected while sending "${payload.file}"`
+        "Sending failed",
+        `The receiver disconnected while sending "${payload.file}".`,
+        "error"
     );
 });
 
@@ -209,12 +211,11 @@ document.addEventListener("dragover", (event) => event.preventDefault());
 
 function showConnectionError(message) {
     connectionErrorMsg.textContent = message;
-    connectionErrorModal.style.display = 'flex';
+    openModal(ERROR_MODAL_ID, {focus: "#retry-send"});
 }
 
-
-closeErrorBtn.addEventListener('click', () => {
-    connectionErrorModal.style.display = 'none';
+function dismissConnectionError() {
+    closeModal(ERROR_MODAL_ID);
 
     failedTransfers.forEach(id => {
         const transfer = ongoingTransfers.get(id);
@@ -227,6 +228,15 @@ closeErrorBtn.addEventListener('click', () => {
     failedTransfers.clear();
 
     updateTransferCount();
+}
+
+closeErrorBtn.addEventListener('click', dismissConnectionError);
+onModalDismiss(ERROR_MODAL_ID, dismissConnectionError);
+
+// The selection is kept when sending fails, so "Try again" just resends it.
+document.getElementById('retry-send').addEventListener('click', () => {
+    dismissConnectionError();
+    sendFileButton.click();
 });
 
 
@@ -386,31 +396,7 @@ document.addEventListener('click', () => {
     toggle.classList.remove('is-open');
 });
 
-function showNotification(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-
-    container.appendChild(toast);
-
-    // 1. Wait for 5 seconds of visibility
-    setTimeout(() => {
-        // 2. Start the fade out
-        toast.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-20px)'; // Optional: slight slide up effect
-
-        // 3. Remove from DOM exactly when the 0.5s transition ends
-        setTimeout(() => {
-            toast.remove();
-        }, 500);
-    }, 5000);
-}
-
-
 EventsOn("transfer-permission-denied", (payload) => {
     console.log("Here transfer permission in frontend")
-    showNotification("Permission denied by the receiver for transfer", "failed");
+    showToast("Transfer declined", "The receiving device didn't accept the files.", "error");
 });

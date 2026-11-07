@@ -1,21 +1,46 @@
 
-export function showToast(title, message) {
-    const toast = document.createElement("div");
-    toast.className = "toast";
+const TOAST_ICONS = {info: "info", success: "check_circle", error: "error"};
 
+/**
+ * Shows a stacked notification in the bottom-right corner.
+ * @param {string} title
+ * @param {string} [message]
+ * @param {"info"|"success"|"error"} [type]
+ */
+export function showToast(title, message = "", type = "info") {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute("role", type === "error" ? "alert" : "status");
     toast.innerHTML = `
-        <strong>${escapeHtml(title)}</strong>
-        <div>${escapeHtml(message)}</div>
+        <span class="toast-icon material-symbols-outlined" aria-hidden="true">${TOAST_ICONS[type] || "info"}</span>
+        <div class="toast-text">
+            <strong>${escapeHtml(title)}</strong>
+            ${message ? `<span>${escapeHtml(message)}</span>` : ""}
+        </div>
+        <button type="button" class="toast-close" aria-label="Dismiss">
+            <span class="material-symbols-outlined">close</span>
+        </button>
     `;
 
-    document.body.appendChild(toast);
+    let timer;
+    const dismiss = () => {
+        clearTimeout(timer);
+        toast.classList.add("is-leaving");
+        setTimeout(() => toast.remove(), 200);
+    };
+    const arm = () => { timer = setTimeout(dismiss, type === "error" ? 7000 : 4500); };
 
-    setTimeout(() => toast.classList.add("show"), 10);
+    toast.querySelector(".toast-close").addEventListener("click", dismiss);
+    toast.addEventListener("mouseenter", () => clearTimeout(timer));
+    toast.addEventListener("mouseleave", arm);
 
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+    container.appendChild(toast);
+    // Keep at most 4 on screen.
+    while (container.children.length > 4) container.firstElementChild.remove();
+    arm();
 }
 
 export function escapeHtml(text) {

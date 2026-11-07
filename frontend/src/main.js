@@ -1,10 +1,11 @@
 import "./core/peerList";
+import "./core/modal";
 import "./core/settings";
 import "./core/theme";
 import "./core/state";
 import '@fontsource-variable/inter';
-import './style.css';
 import './main-window.css';
+import './modals.css';
 import "./transfer/receiver";
 import "./transfer/sender";
 import * as runtime from "../wailsjs/runtime";

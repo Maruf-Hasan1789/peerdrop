@@ -1,13 +1,12 @@
 /* ============================================================
    PeerDrop — theme tokens + main window
    Dark tokens live on :root; <html data-theme="light"> swaps them.
-   style.css (modals) reads the same tokens.
+   modals.css reads the same tokens.
    ============================================================ */
 :root {
     color-scheme: dark;
 
     --pd-ink-rgb: 255, 255, 255;      /* overlays, lines, hovers */
-    --pd-panel-rgb: 22, 27, 38;       /* legacy modal surfaces */
     --pd-accent-rgb: 110, 106, 246;
 
     --pd-bg: #0a0b0e;
@@ -60,16 +59,6 @@
     --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter Variable', 'Inter',
         'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-    /* Legacy tokens used by style.css */
-    --primary: var(--pd-accent);
-    --primary-hover: var(--pd-accent-hover);
-    --primary-light: var(--pd-accent-soft);
-    --background-dark: var(--pd-bg);
-    --text-primary: var(--pd-text);
-    --text-secondary: var(--pd-text-2);
-    --text-tertiary: var(--pd-text-3);
-    --error: var(--pd-danger);
-    --success: var(--pd-success);
 }
 
 /* ---------- Light theme (macOS-style) ----------
@@ -79,7 +68,6 @@
     color-scheme: light;
 
     --pd-ink-rgb: 17, 20, 34;
-    --pd-panel-rgb: 255, 255, 255;
     --pd-accent-rgb: 91, 86, 232;
 
     --pd-bg: #f5f5f7;
@@ -123,6 +111,19 @@
     --pd-tab-shadow: 0 1px 2px rgba(17, 20, 34, 0.1);
     --pd-overlay: rgba(17, 20, 34, 0.28);
 }
+
+/* ---------- Base ---------- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hide scrollbars (scrolling still works) */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { width: 0; height: 0; }
+
+a { color: inherit; text-decoration: none; }
 
 [hidden] { display: none !important; }
 
@@ -1033,40 +1034,6 @@ button { font-family: inherit; color: inherit; }
     font-size: 22px;
 }
 
-/* ---------- Modals (shared surfaces from style.css) ---------- */
-.modal-overlay { background: var(--pd-overlay); }
-
-.modal-container {
-    background: var(--pd-surface-1);
-    border-color: var(--pd-line-strong);
-    box-shadow: var(--pd-pop-shadow);
-}
-
-.modal-sidebar { background: var(--pd-sidebar); }
-
-/* ---------- Toasts (shared) ---------- */
-.toast {
-    background: var(--pd-surface-3);
-    color: var(--pd-text);
-    border: 1px solid var(--pd-line-strong);
-    border-left: 3px solid var(--pd-accent);
-    border-radius: var(--pd-radius);
-    box-shadow: var(--pd-pop-shadow);
-    font-size: 13px;
-}
-
-.toast {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    max-width: 340px;
-    padding: 12px 14px;
-}
-
-.toast strong { display: block; font-weight: 600; margin-bottom: 2px; }
-.toast div { color: var(--pd-text-2); }
-.toast.failed { border-left-color: var(--pd-danger); background: var(--pd-surface-3); }
-
 /* ---------- Motion ---------- */
 @keyframes pdFadeUp {
     from { opacity: 0; transform: translateY(4px); }
@@ -1094,6 +1061,3 @@ button { font-family: inherit; color: inherit; }
     .tab { padding: 0 8px; }
 }
 
-/* ---------- Appearance picker (Settings) ---------- */
-.theme-picker { align-self: flex-start; }
-.theme-option .material-symbols-outlined { font-size: 16px; }

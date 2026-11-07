@@ -1,5 +1,6 @@
-import { EventsOn } from "../../wailsjs/runtime";
-import { formatBytes, showToast } from "../utils/utils";
+import { EventsOn, WindowShow, WindowUnminimise } from "../../wailsjs/runtime";
+import { escapeHtml, fileTypeOf, formatBytes, hueOf, initialsOf, showToast } from "../utils/utils";
+import { closeModal, openModal } from "../core/modal";
 import { createTransferRow, markRowFailed, refreshTransfersPanel, removeRowAnimated, setRowProgress } from "./transfersPanel";
 import { ReceiveFilePermission } from "../../wailsjs/go/app/App";
 const receivingTransfers = new Map();
@@ -20,159 +21,111 @@ const PermissionMode = {
 };
 
 
-let permissionState = {
-    mode: PermissionMode.None,
-    files: {}
-};
-
 function showPermissionPopup(sender) {
     const modal = document.getElementById("permission-modal");
     const fileList = modal.querySelector(".pm-files");
-    const partialButton = document.getElementById("partial-permission-btn");
-    const allowAllBtn = document.getElementById("allow-btn");
-    const denyAllBtn = document.getElementById("deny-btn");
+    const selectAll = document.getElementById("pm-select-all");
+    const summary = document.getElementById("pm-selected-summary");
+    const acceptBtn = document.getElementById("allow-btn");
+    const acceptLabel = document.getElementById("allow-btn-label");
+    const declineBtn = document.getElementById("deny-btn");
+    const files = sender.files || [];
+    const senderName = sender.user_name || "A device";
+    const totalBytes = files.reduce((sum, f) => sum + Number(f.file_size || 0), 0);
+    const plural = (n) => `${n} file${n === 1 ? "" : "s"}`;
 
-    permissionState = {
-        mode: PermissionMode.Partial,
-        files: {}
-    };
+    // Header: sender avatar + headline
+    const avatar = document.getElementById("permission-avatar");
+    avatar.style.setProperty("--avatar-hue", hueOf(sender.id || senderName));
+    avatar.textContent = initialsOf(senderName);
+    document.getElementById("permission-title").textContent =
+        `${senderName} wants to send you ${plural(files.length)}`;
+    document.getElementById("permission-message").textContent =
+        `${formatBytes(totalBytes)} in total · untick anything you don't want`;
 
+    // One checkbox per file, all ticked by default
     fileList.innerHTML = "";
-    partialButton.disabled = true;
-    modal.querySelector(".message").textContent =
-        `${sender.user_name} wants to send you these files:`;
-
-    sender.files.forEach(file => {
-        const fileID = file.id;
+    files.forEach(file => {
+        const type = fileTypeOf(file.file_name);
         const li = document.createElement("li");
         li.className = "pm-file-item";
-
-        const sizeMB = file.file_size / (1024 * 1024);
-        const info = document.createElement("span");
-        info.className = "pm-file-info";
-        info.textContent = `${file.file_name} · ${decimalNumberFormatter.format(sizeMB)} MB`;
-
-        const btnBox = document.createElement("div");
-        btnBox.className = "pm-file-actions";
-
-        const allowBtn = document.createElement("button");
-        allowBtn.type = "button";
-        allowBtn.textContent = "Allow";
-        allowBtn.className = "btn-allow";
-
-        const denyBtn = document.createElement("button");
-        denyBtn.type = "button";
-        denyBtn.textContent = "Deny";
-        denyBtn.className = "btn-deny";
-
-        // --- ROW-LEVEL CLICK HANDLERS ---
-        // --- ROW-LEVEL CLICK HANDLERS ---
-        allowBtn.onclick = () => {
-            // If already allowed, toggle off (reset)
-            if (permissionState.files[fileID] === true) {
-                delete permissionState.files[fileID];
-                updateRowUI(allowBtn, denyBtn, null);
-            } else {
-                // Set to allowed
-                permissionState.files[fileID] = true;
-                updateRowUI(allowBtn, denyBtn, true);
-            }
-            checkPartialButton();
-        };
-
-        denyBtn.onclick = () => {
-            // If already denied, toggle off (reset)
-            if (permissionState.files[fileID] === false) {
-                delete permissionState.files[fileID];
-                updateRowUI(allowBtn, denyBtn, null);
-            } else {
-                // Set to denied
-                permissionState.files[fileID] = false;
-                updateRowUI(allowBtn, denyBtn, false);
-            }
-            checkPartialButton();
-        };
-
-        btnBox.append(allowBtn, denyBtn);
-        li.append(info, btnBox);
+        li.innerHTML = `
+            <label class="pm-file">
+                <input type="checkbox" class="checkbox pm-check" data-file-id="${escapeHtml(String(file.id))}" checked>
+                <span class="file-thumb tone-${type.tone}" aria-hidden="true">
+                    <span class="material-symbols-outlined">${type.icon}</span>
+                </span>
+                <span class="pm-file-text">
+                    <span class="pm-file-name" title="${escapeHtml(file.file_name)}">${escapeHtml(file.file_name)}</span>
+                    <span class="pm-file-size">${formatBytes(file.file_size)}</span>
+                </span>
+            </label>`;
         fileList.appendChild(li);
     });
 
+    const checks = () => [...fileList.querySelectorAll(".pm-check")];
 
-    function updateRowUI(allow, deny, isAllowed) {
-        if (isAllowed === null) {
-            // Reset state: show both
-            allow.style.display = "inline-block";
-            deny.style.display = "inline-block";
-
-            allow.classList.remove("active");
-            deny.classList.remove("active");
-        } else if (isAllowed) {
-            // Allowed: Show Allow (active), Hide Deny
-            allow.style.display = "inline-block";
-            deny.style.display = "none";
-
-            allow.classList.add("active");
-            deny.classList.remove("active");
-        } else {
-            // Denied: Hide Allow, Show Deny (active)
-            allow.style.display = "none";
-            deny.style.display = "inline-block";
-
-            allow.classList.remove("active");
-            deny.classList.add("active");
-        }
+    function refresh() {
+        const all = checks();
+        const picked = all.filter(c => c.checked);
+        const pickedBytes = files
+            .filter(f => picked.some(c => c.dataset.fileId === String(f.id)))
+            .reduce((sum, f) => sum + Number(f.file_size || 0), 0);
+        selectAll.checked = picked.length === all.length && all.length > 0;
+        selectAll.indeterminate = picked.length > 0 && picked.length < all.length;
+        summary.textContent = `${picked.length} of ${all.length} selected · ${formatBytes(pickedBytes)}`;
+        acceptBtn.disabled = picked.length === 0;
+        acceptLabel.textContent = picked.length === all.length
+            ? (all.length === 1 ? "Accept" : "Accept all")
+            : `Accept ${picked.length}`;
     }
 
-    function checkPartialButton() {
-        const count = Object.keys(permissionState.files).length;
-        partialButton.disabled = (count === 0);
-    }
+    fileList.onchange = refresh;
+    selectAll.onchange = () => {
+        checks().forEach(c => { c.checked = selectAll.checked; });
+        refresh();
+    };
+    refresh();
 
     function finalizeAndSend(mode) {
-        permissionState.mode = mode;
-
-        if (mode !== PermissionMode.Partial) {
-            permissionState.files = {};
-        } else {
-            sender.files.forEach(file => {
-                const fid = file.id;
-                if (permissionState.files[fid] === undefined) {
-                    permissionState.files[fid] = false;
-                }
+        const state = {mode, files: {}};
+        if (mode === PermissionMode.Partial) {
+            checks().forEach(c => {
+                // ids are numeric or string on the Go side; keep the original type
+                const original = files.find(f => String(f.id) === c.dataset.fileId);
+                state.files[original ? original.id : c.dataset.fileId] = c.checked;
             });
         }
-        console.log("Permission State : ", permissionState)
-        ReceiveFilePermission(sender.id, sender.transfer_id, permissionState)
-            .then(() => {
-                console.log(`Permission sent: ${mode}`);
-                modal.style.display = "none";
+        acceptBtn.disabled = true;
+        declineBtn.disabled = true;
+        ReceiveFilePermission(sender.id, sender.transfer_id, state)
+            .then(() => closeModal(modal))
+            .catch(err => {
+                console.error("Failed to send permission:", err);
+                showToast("Couldn't answer the request", "The sender may have disconnected.", "error");
+                closeModal(modal);
             })
-            .catch(err => console.error("Failed to send permission:", err));
+            .finally(() => { declineBtn.disabled = false; refresh(); });
     }
 
-    // --- MAIN ACTION BUTTON HANDLERS ---
-    // Using .onclick ensures we overwrite previous listeners from other popup calls
-    allowAllBtn.onclick = () => finalizeAndSend(PermissionMode.All);
-    denyAllBtn.onclick = () => finalizeAndSend(PermissionMode.None);
-    partialButton.onclick = () => finalizeAndSend(PermissionMode.Partial);
+    // .onclick overwrites handlers left by a previous request
+    acceptBtn.onclick = () => {
+        const all = checks();
+        const picked = all.filter(c => c.checked).length;
+        if (picked === 0) return;
+        finalizeAndSend(picked === all.length ? PermissionMode.All : PermissionMode.Partial);
+    };
+    declineBtn.onclick = () => finalizeAndSend(PermissionMode.None);
 
-    // Show the modal
-    modal.style.display = "flex";
+    // Bring the window forward so the request isn't missed
+    try {
+        WindowUnminimise();
+        WindowShow();
+    } catch (e) {
+        console.warn("Could not focus window", e);
+    }
+    openModal(modal, {focus: "#allow-btn"});
 }
-
-
-
-
-
-const decimalNumberFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
-
-
-
-
 
 EventsOn("receiving-started", (payload) => {
     // payload: { id, fileName, totalChunks, totalReceived }
@@ -219,8 +172,9 @@ EventsOn("receiving-failed", (payload) => {
     }
 
     showToast(
-        `File transfer failed`,
-        `Sender disconnected while receiving "${payload.file}"`
+        "Receiving failed",
+        `The sender disconnected while sending "${payload.file}".`,
+        "error"
     );
 });
 
