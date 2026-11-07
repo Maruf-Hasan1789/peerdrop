@@ -1,177 +1,182 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PeerDrop</title>
+    <script>
+        // Apply the saved theme before first paint (see src/core/theme.js)
+        (function () {
+            var pref = "system";
+            try { pref = localStorage.getItem("peerdrop.theme") || "system"; } catch (e) {}
+            if (pref === "system") {
+                pref = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+            }
+            document.documentElement.dataset.theme = pref === "light" ? "light" : "dark";
+        })();
+    </script>
     <link rel="icon" type="image/png" href="src/assets/images/peerdrop.png">
     <link rel="stylesheet" href="src/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet">
 </head>
 <body>
-<!-- Fixed Header -->
-<header class="main-header">
-    <div class="header-left">
-        <div class="app-icon-wrapper">
-            <img src="src/assets/images/peerdrop.png" alt="PeerDrop" class="app-icon-img">
+<div class="app-shell">
+    <!-- Sidebar: nearby devices -->
+    <aside id="sidebar-column" class="sidebar">
+        <div class="brand">
+            <img src="src/assets/images/peerdrop.png" alt="" class="brand-logo">
+            <div class="brand-text">
+                <span class="brand-name">PeerDrop</span>
+                <span class="brand-tagline">Local network transfers</span>
+            </div>
         </div>
-        <div class="app-brand">
-            <span class="app-name">PeerDrop</span>
-            <span class="app-tagline">Send files to peers</span>
-        </div>
-    </div>
-    <div class="header-actions">
-        <button class="icon-btn" id="history-toggle" title="Transfer History" aria-label="Transfer History">
-            <span class="material-symbols-outlined">history</span>
-        </button>
-        <button class="icon-btn" id="settings-toggle" title="Settings" aria-label="Settings">
-            <span class="material-symbols-outlined">settings</span>
-        </button>
-    </div>
-</header>
 
-<!-- Main Content Area -->
-<main class="main-content">
-    <div class="columns-wrapper">
-        <!-- Primary Column (70%) -->
-        <div id="main-column" class="primary-column">
-            <!-- Selected Receiver Section -->
-            <section class="receiver-section">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        Selected Receiver
-                        <span class="status-indicator"></span>
-                    </h2>
+        <div class="sidebar-section-head">
+            <span class="sidebar-label">Nearby devices</span>
+            <div class="sidebar-head-meta">
+                <span class="online-pill" aria-label="Peers online">
+                    <span class="live-dot" aria-hidden="true"></span>
+                    <span id="active-peer-count">0</span>
+                </span>
+                <button id="refresh-connected-peer-btn" class="icon-btn icon-btn-sm" title="Refresh devices" aria-label="Refresh devices">
+                    <span class="material-symbols-outlined">refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="peer-list-wrapper">
+            <ul id="peer-list" class="peer-list">
+                <!-- Peer items will be dynamically inserted here -->
+            </ul>
+            <div id="peer-list-empty" class="peer-list-empty" aria-live="polite">
+                <div class="radar" aria-hidden="true">
+                    <span class="material-symbols-outlined">wifi_tethering</span>
                 </div>
-                <div id="selected-peer-card" class="receiver-card empty-state">
-                    <div class="receiver-card-content">
-                        <div class="receiver-avatar">
-                            <span class="material-symbols-outlined">devices</span>
-                        </div>
-                        <div class="receiver-info">
-                            <span id="selected-peer-name" class="receiver-name">No peer selected</span>
-                            <span id="selected-peer-status"
-                                  class="receiver-status">Select a peer from the sidebar</span>
-                        </div>
-                    </div>
-                    <button type="button" id="clear-selection" class="clear-btn" style="display: none;"
-                            aria-label="Clear selection">
+                <p class="empty-title">Looking for devices…</p>
+                <p class="empty-hint">Devices running PeerDrop on the same network will show up here.</p>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="me-card">
+                <div class="me-avatar" aria-hidden="true">
+                    <span class="material-symbols-outlined">laptop_mac</span>
+                </div>
+                <div class="me-info">
+                    <span id="my-device-name" class="me-name">This device</span>
+                    <span class="me-meta"><span class="live-dot" aria-hidden="true"></span>Visible on your network</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Workspace -->
+    <main id="main-column" class="workspace">
+        <header class="workspace-header">
+            <div class="workspace-heading">
+                <h1 class="workspace-title">Send files</h1>
+                <div id="selected-peer-card" class="recipient-chip empty-state">
+                    <span class="recipient-label">To</span>
+                    <span class="recipient-avatar" id="selected-peer-avatar" aria-hidden="true">
+                        <span class="material-symbols-outlined">devices</span>
+                    </span>
+                    <span id="selected-peer-name" class="recipient-name">No device selected</span>
+                    <span id="selected-peer-status" class="recipient-status">Pick one from Nearby devices</span>
+                    <button type="button" id="clear-selection" class="recipient-clear" style="display: none;"
+                            aria-label="Clear selection" title="Clear selection">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 <input type="hidden" id="receiver-select" value="">
-            </section>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="history-toggle" title="Transfer history" aria-label="Transfer history">
+                    <span class="material-symbols-outlined">history</span>
+                </button>
+                <button class="icon-btn" id="settings-toggle" title="Settings" aria-label="Settings">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </div>
+        </header>
 
-            <!-- File Upload Zone -->
-            <section class="upload-section">
+        <div class="workspace-body">
+            <!-- Composer: drop zone + selected files -->
+            <section class="composer">
                 <div id="drop-zone" class="drop-zone">
-                    <div class="drop-zone-content">
-                        <div class="upload-icon-wrapper">
-                            <span class="material-symbols-outlined upload-icon">cloud_upload</span>
-                        </div>
-                        <p class="drop-zone-text">Drag & drop files here</p>
-                        <div class="browse-wrapper">
-                            <!-- Main Browse Button -->
-                            <button id="browse-dropdown-toggle" class="browse-btn">
-                                <span class="material-symbols-outlined">folder_open</span>
-                                <span>Browse</span>
-                            </button>
-
-                            <!-- Dropdown Menu (hidden by default) -->
-                            <div id="browse-dropdown-menu" class="dropdown-menu">
-                                <button type="button" id="pick-file" class="browse-btn">
-                                    <span class="material-symbols-outlined">folder_open</span>
-                                    <span>Browse Files</span>
-                                </button>
-                                <button type="button" id="pick-folder" class="browse-btn">
-                                    <span class="material-symbols-outlined">folder_open</span>
-                                    <span>Browse Folder</span>
-                                </button>
-                            </div>
-                        </div>
-
-
-
+                    <div class="drop-icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">upload_file</span>
                     </div>
-                </div>
-
-                <!-- File Info Bar: list fills space, buttons at bottom -->
-                <div id="file-info-bar" class="file-info-bar" style="display: none">
-                    <div class="file-details">
-                        <div id="selectedFileListContainer" class="file-list-scroll"></div>
-                        <div class="file-actions">
-                            <button id="clear-file" class="file-action-btn file-action-clear" type="button" aria-label="Clear selection">
-                                <span class="material-symbols-outlined">delete_sweep</span>
-                                <span>Clear</span>
+                    <div class="drop-text">
+                        <p class="drop-title">Drop files or folders here</p>
+                        <p class="drop-hint">They go straight to the selected device over your local network.</p>
+                    </div>
+                    <div class="browse-wrapper">
+                        <button id="browse-dropdown-toggle" class="btn-secondary-pd" type="button" aria-haspopup="menu">
+                            <span>Browse</span>
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </button>
+                        <div id="browse-dropdown-menu" class="dropdown-menu" role="menu">
+                            <button type="button" id="pick-file" class="menu-item" role="menuitem">
+                                <span class="material-symbols-outlined">description</span>
+                                <span>Files…</span>
                             </button>
-                            <button id="send-btn" class="file-action-btn file-action-send send-btn" type="button" disabled>
-                                <span class="material-symbols-outlined">send</span>
-                                <span>Send All</span>
+                            <button type="button" id="pick-folder" class="menu-item" role="menuitem">
+                                <span class="material-symbols-outlined">folder</span>
+                                <span>Folder…</span>
                             </button>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- Active Transfers Section -->
-            <section class="transfers-section">
-                <div class="section-header">
-                    <h2 class="section-title">Sending</h2>
-                    <div class="transfer-count-badge transfer-count-send" aria-label="Active sends">
-                        <span class="material-symbols-outlined transfer-count-icon">upload</span>
-                        <span id="send-file-count" class="transfer-count-num">0</span>
+                <div id="file-info-bar" class="file-tray" style="display: none">
+                    <div class="file-tray-head">
+                        <span id="selected-file-summary" class="file-tray-title">Ready to send</span>
                     </div>
-                </div>
-                <div id="transfer-list" class="transfer-list">
-                    <!-- transfer cards will be dynamically inserted here -->
-                </div>
-            </section>
-
-            <!-- Receiving Transfers Section -->
-            <section class="transfers-section" style="margin-top: 2rem;">
-                <div class="section-header">
-                    <h2 class="section-title">Receiving</h2>
-                    <div class="transfer-count-badge transfer-count-receive" aria-label="Active receives">
-                        <span class="material-symbols-outlined transfer-count-icon">download</span>
-                        <span id="receive-count" class="transfer-count-num">0</span>
-                    </div>
-                </div>
-                <div id="receive-list" class="transfer-list">
-                    <!-- Receive cards will be dynamically inserted here -->
-                </div>
-            </section>
-        </div>
-
-        <!-- Sidebar (30%) -->
-        <aside id="sidebar-column" class="sidebar-column">
-            <header class="sidebar-header">
-                <div class="sidebar-header-top">
-                    <div class="sidebar-title-row">
-                        <span class="material-symbols-outlined sidebar-title-icon">group</span>
-                        <h3 class="sidebar-title">Connected Peers</h3>
-                    </div>
-                    <div class="sidebar-header-meta">
-                        <span class="sidebar-count-badge" aria-label="Peers online">
-                            <span class="material-symbols-outlined sidebar-count-icon">wifi</span>
-                            <span id="active-peer-count" class="sidebar-count-num">0</span>
-                        </span>
-                        <button id="refresh-connected-peer-btn" class="sidebar-refresh-btn" aria-label="Refresh peers">
-                            <span class="material-symbols-outlined">sync</span>
+                    <div id="selectedFileListContainer" class="file-list"></div>
+                    <div class="file-actions">
+                        <button id="clear-file" class="btn-ghost-pd" type="button">Clear all</button>
+                        <button id="send-btn" class="btn-primary-pd send-btn" type="button" disabled>
+                            <span class="material-symbols-outlined">send</span>
+                            <span id="send-btn-label">Send</span>
                         </button>
                     </div>
                 </div>
-            </header>
-            <div class="peer-list-wrapper">
-                <ul id="peer-list" class="peer-list">
-                    <!-- Peer items will be dynamically inserted here -->
-                </ul>
-                <p id="peer-list-empty" class="peer-list-empty" aria-live="polite">No peers connected. They’ll appear here when available.</p>
-            </div>
-        </aside>
-    </div>
-</main>
+            </section>
+
+            <!-- Transfers panel -->
+            <section class="transfers-panel">
+                <div class="transfers-head">
+                    <h2 class="panel-title">Transfers</h2>
+                    <div class="tabs" role="tablist" aria-label="Filter transfers">
+                        <button type="button" class="tab active" role="tab" data-filter="all" aria-selected="true">
+                            All <span id="all-count" class="tab-count">0</span>
+                        </button>
+                        <button type="button" class="tab" role="tab" data-filter="send" aria-selected="false">
+                            Sending <span id="send-file-count" class="tab-count">0</span>
+                        </button>
+                        <button type="button" class="tab" role="tab" data-filter="receive" aria-selected="false">
+                            Receiving <span id="receive-count" class="tab-count">0</span>
+                        </button>
+                        <button type="button" class="tab" role="tab" data-filter="failed" aria-selected="false">
+                            Failed <span id="failed-count" class="tab-count">0</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="transfers-body" class="transfers-body" data-filter="all">
+                    <div id="transfer-list" class="transfer-list" data-dir="send"></div>
+                    <div id="receive-list" class="transfer-list" data-dir="receive"></div>
+                    <div id="failed-list" class="transfer-list" data-dir="failed"></div>
+                    <div id="transfers-empty" class="transfers-empty">
+                        <span class="material-symbols-outlined">swap_vert</span>
+                        <p class="empty-title" id="transfers-empty-title">No transfers yet</p>
+                        <p class="empty-hint" id="transfers-empty-hint">Files you send or receive will show up here.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="modal-overlay">
@@ -202,6 +207,27 @@
 
                 <!-- General Section -->
                 <div id="settings-general" class="settings-section active">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label" id="appearance-label">Appearance</span>
+                            <p class="setting-description">Match your system, or always use light or dark. Applies instantly.</p>
+                        </div>
+                        <div class="tabs theme-picker" role="radiogroup" aria-labelledby="appearance-label">
+                            <button type="button" class="tab theme-option" role="radio" data-theme-option="system" aria-checked="false">
+                                <span class="material-symbols-outlined">contrast</span>
+                                <span>System</span>
+                            </button>
+                            <button type="button" class="tab theme-option" role="radio" data-theme-option="light" aria-checked="false">
+                                <span class="material-symbols-outlined">light_mode</span>
+                                <span>Light</span>
+                            </button>
+                            <button type="button" class="tab theme-option" role="radio" data-theme-option="dark" aria-checked="false">
+                                <span class="material-symbols-outlined">dark_mode</span>
+                                <span>Dark</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <label for="userName" class="setting-label">Display Name</label>

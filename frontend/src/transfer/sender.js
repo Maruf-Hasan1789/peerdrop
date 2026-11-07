@@ -1,11 +1,10 @@
 import {EventsOn} from "../../wailsjs/runtime";
 import {DisconnectPeer, PickFiles, PickFolder, SendFileToPeer} from "../../wailsjs/go/app/App";
-import {showToast} from "../utils/utils";
+import {escapeHtml, fileTypeOf, showToast} from "../utils/utils";
+import {createTransferRow, markRowFailed, refreshTransfersPanel, removeRowAnimated, setRowProgress} from "./transfersPanel";
 
 const connectionErrorMsg = document.getElementById('connection-error-msg');
 const connectionErrorModal = document.getElementById('connection-error-modal');
-const transferListEl = document.getElementById("transfer-list");
-const sendFileCountEl = document.getElementById("send-file-count");
 const closeErrorBtn = document.getElementById('close-error');
 const sendFileButton = document.getElementById("send-btn");
 export const receiverSelect = document.getElementById("receiver-select");
@@ -33,82 +32,52 @@ const failedTransfers = new Set();
 
 
 function createTransferCard(id, peerId, fileName, transferId) {
-    const card = document.createElement("div");
-    card.classList.add("transfer-card");
+    const card = createTransferRow(fileName, "send");
     card.dataset.transferId = transferId;
     card.dataset.peerId = peerId;
 
-    card.innerHTML = `
-        <div class="transfer-info">
-            <span class="file-label">${fileName}</span>
-            <span class="status-label">0%</span>
-        </div>
-        <div class="progress-container">
-            <div class="progress-bar"></div>
-        </div>
-        <div class="transfer-actions">
-            <!-- Pause/Resume and Cancel (Stop) not working - commented out
-            <button class="action-btn pause">⏸</button>
-            <button class="action-btn resume" style="display:none;">▶️</button>
-            <button class="action-btn cancel">❌</button>
-            -->
-        </div>
-    `;
-
-    transferListEl.appendChild(card);
-
-    const transfer = {
+    ongoingTransfers.set(id, {
         peerId,
         transferId,
         card,
         paused: false,
         state: "active"
-    };
-
-    ongoingTransfers.set(id, transfer);
+    });
     updateTransferCount();
-
-    // Pause/Resume and Cancel (Stop) buttons not working - commented out
-    // const pauseBtn = card.querySelector(".pause");
-    // const resumeBtn = card.querySelector(".resume");
-    // const cancelBtn = card.querySelector(".cancel");
-
-    // pauseBtn.addEventListener("click", () => {
-    //     if (transfer.state !== "active") return;
-    //     transfer.paused = true;
-    //     pauseBtn.style.display = "none";
-    //     resumeBtn.style.display = "inline-flex";
-    //     // backend pause here
-    // });
-
-    // resumeBtn.addEventListener("click", () => {
-    //     if (transfer.state !== "active") return;
-    //     transfer.paused = false;
-    //     pauseBtn.style.display = "inline-flex";
-    //     resumeBtn.style.display = "none";
-    //     // backend resume here
-    // });
-
-    // cancelBtn.addEventListener("click", () => {
-    //     cancelTransfer(transferId, "user-cancelled");
-    // });
 }
 
 
-export function cancelTransfer(transferId, reason = "unknown") {
-    const transfer = ongoingTransfers.get(transferId);
-    if (!transfer) return;
+function findTransferKey(key) {
+    if (ongoingTransfers.has(key)) return key;
+    for (const [k, t] of ongoingTransfers) {
+        if (t.transferId === key) return k;
+    }
+    return undefined;
+}
 
-    transfer.state = "failed";
+const FAIL_REASONS = {
+    "peer-disconnected": "Device disconnected",
+    "backend-failed": "Connection lost",
+};
+
+export function cancelTransfer(transferId, reason = "unknown") {
+    const key = findTransferKey(transferId);
+    if (key === undefined) return;
+    const transfer = ongoingTransfers.get(key);
 
     console.log(`[TRANSFER ENDED] ${transferId} (${reason})`);
+    ongoingTransfers.delete(key);
 
-    transfer.card.remove();
-    ongoingTransfers.delete(transferId);
-    failedTransfers.add(transferId);
+    if (reason === "completed") {
+        transfer.state = "completed";
+        removeRowAnimated(transfer.card);
+    } else {
+        transfer.state = "failed";
+        failedTransfers.add(key);
+        markRowFailed(transfer.card, FAIL_REASONS[reason] || "Transfer interrupted");
+    }
 
     updateTransferCount();
-    // backend cancel if needed
 }
 
 
@@ -116,19 +85,13 @@ function updateProgress(id, progress) {
     const transfer = ongoingTransfers.get(id);
     if (!transfer || transfer.state !== "active") return;
 
-    const progressBar = transfer.card.querySelector(".progress-bar");
-    const statusLabel = transfer.card.querySelector(".status-label");
+    setRowProgress(transfer.card, progress);
 
-    progressBar.style.width = `${progress}%`;
-    statusLabel.textContent =
-        progress === 100
-            ? "Completed"
-            : `Sending… ${Math.floor(progress)}%`;
-
-    if (progress === 100) {
+    if (progress >= 100) {
+        transfer.state = "finishing";
         setTimeout(() => {
             cancelTransfer(id, "completed");
-        }, 1000);
+        }, 2500);
     }
 }
 
@@ -172,8 +135,7 @@ if (document.readyState === "loading") {
 
 
 function updateTransferCount() {
-    console.log("Active transfers:", ongoingTransfers.size);
-    sendFileCountEl.textContent = ongoingTransfers.size.toString();
+    refreshTransfersPanel();
 }
 
 
@@ -268,16 +230,19 @@ closeErrorBtn.addEventListener('click', () => {
 });
 
 
+function getParentDir(path) {
+    const i = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+    return i > 0 ? path.slice(0, i) : path;
+}
+
 function getFileName(path) {
     console.log("Path : ", path)
     return path.split(/[/\\]/).pop();
 }
 
 export function handleFileSelection(paths) {
-    if (paths.length === 0) {
-        resetFileSelection();
-        return;
-    }
+    // A cancelled picker returns nothing: keep the current selection.
+    if (!paths || paths.length === 0) return;
 
     paths.forEach(path => filePath.add(path));
 
@@ -294,38 +259,44 @@ export function handleFileSelection(paths) {
 }
 
 function renderSelectedFiles(filePath) {
-
-
     selectedFileList.innerHTML = "";
 
-    console.log("Here in render selected files");
-    let i = 0;
     for (const file of filePath) {
-
+        const name = getFileName(file);
+        const type = fileTypeOf(name);
         const div = document.createElement("div");
         div.classList.add("file-item");
 
-        div.innerHTML = `<span class="file-index" aria-label="File ${i + 1}">
-                            <span class="file-index-num">${i + 1}</span>
-                        </span>
-                        <span class="file-name">${getFileName(file)}</span>
-                        <div class="file-item-actions">
-                            <button type="button" class="remove-btn" aria-label="Remove file">
-                                <span class="material-symbols-outlined">close</span>
-                                <span>Remove</span>
-                            </button>
-                        </div>`
+        div.innerHTML = `<div class="file-thumb tone-${type.tone}" aria-hidden="true">
+                            <span class="material-symbols-outlined">${type.icon}</span>
+                        </div>
+                        <div class="file-item-text">
+                            <span class="file-name" title="${escapeHtml(file)}">${escapeHtml(name)}</span>
+                            <span class="file-path">${escapeHtml(getParentDir(file))}</span>
+                        </div>
+                        <button type="button" class="remove-btn" aria-label="Remove ${escapeHtml(name)}" title="Remove">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>`;
 
-        div.querySelector(".remove-btn").addEventListener("click", () => {
-            div.remove();
+        div.querySelector(".remove-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
             filePath.delete(file);
             updateUploadFileButtons();
-            renderSelectedFiles(filePath)
+            renderSelectedFiles(filePath);
         });
 
         selectedFileList.appendChild(div);
-        i++;
     }
+    updateSendSummary();
+}
+
+function updateSendSummary() {
+    const n = filePath.size;
+    const noun = n === 1 ? "item" : "items";
+    const summary = document.getElementById("selected-file-summary");
+    const label = document.getElementById("send-btn-label");
+    if (summary) summary.textContent = `${n} ${noun} ready to send`;
+    if (label) label.textContent = n > 0 ? `Send ${n} ${noun}` : "Send";
 }
 
 function updateUploadFileButtons() {
@@ -341,6 +312,8 @@ function updateUploadFileButtons() {
 
 function resetFileSelection() {
     filePath.clear();
+    selectedFileList.innerHTML = "";
+    updateSendSummary();
     sendFileButton.disabled = true;
 
     // Toggle UI back
@@ -368,8 +341,17 @@ export function clearReceiverSelection() {
 
     document.getElementById("receiver-select").value = "";
 
-    document.getElementById("selected-peer-name").textContent = "No Peer Selected";
-    document.getElementById("selected-peer-status").textContent = "Selected a Peer from the sidebar";
+    document.getElementById("selected-peer-name").textContent = "No device selected";
+    document.getElementById("selected-peer-status").textContent = "Pick one from Nearby devices";
+    const avatar = document.getElementById("selected-peer-avatar");
+    if (avatar) {
+        avatar.removeAttribute("style");
+        avatar.innerHTML = `<span class="material-symbols-outlined">devices</span>`;
+    }
+    const card = document.getElementById("selected-peer-card");
+    card.classList.remove("active");
+    card.classList.add("empty-state");
+    clearSelection.style.display = "none";
 
     document.querySelectorAll("#peer-list li")
         .forEach(el => el.classList.remove("selected"));
@@ -393,12 +375,15 @@ pickFolder.addEventListener("click", async ()=> {
 
 toggle.addEventListener('click', (e) => {
     e.stopPropagation(); // prevent document click from immediately hiding
-    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+    const open = menu.style.display !== 'flex';
+    menu.style.display = open ? 'flex' : 'none';
+    toggle.classList.toggle('is-open', open);
 });
 
 // Hide dropdown if clicking outside
 document.addEventListener('click', () => {
     menu.style.display = 'none';
+    toggle.classList.remove('is-open');
 });
 
 function showNotification(message, type = 'success') {

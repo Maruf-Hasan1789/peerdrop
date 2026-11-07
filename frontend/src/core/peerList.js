@@ -1,6 +1,7 @@
 import {EventsOn} from "../../wailsjs/runtime";
 import {ListPeers} from "../../wailsjs/go/app/App";
 import {cancelTransfer, clearReceiverSelection, ongoingTransfers, receiverSelect} from "../transfer/sender";
+import {escapeHtml, hueOf, initialsOf} from "../utils/utils";
 
 const peerListEl = document.getElementById("peer-list");
 const activePeerCount = document.getElementById("active-peer-count");
@@ -35,10 +36,9 @@ EventsOn("peer-disconnected", async (peer) => {
 // Local Map to store peers
 const peersMap = new Map();
 
-function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
+function avatarStyle(peer) {
+    const hue = hueOf(peer.id || peer.user_name);
+    return `--avatar-hue: ${hue}`;
 }
 
 // Fetch peers from backend
@@ -67,15 +67,27 @@ export function updatePeerListUI() {
         li.classList.add("peer-item");
         li.dataset.peerId = peer.id;
 
+        li.tabIndex = 0;
+        li.setAttribute("role", "button");
+        if (receiverSelect.value === peer.id) li.classList.add("selected");
+
         li.innerHTML = `
-            <div class="peer-avatar" aria-hidden="true">
-                <span class="material-symbols-outlined">person</span>
+            <div class="peer-avatar" style="${avatarStyle(peer)}" aria-hidden="true">
+                ${escapeHtml(initialsOf(peer.user_name || "Peer"))}
+                <span class="presence-dot"></span>
             </div>
             <div class="peer-info">
                 <span class="peer-name">${escapeHtml(peer.user_name || 'Peer')}</span>
-                <span class="peer-meta">Port ${peer.port}</span>
+                <span class="peer-meta">Online · Port ${escapeHtml(String(peer.port))}</span>
             </div>
+            <span class="peer-check material-symbols-outlined" aria-hidden="true">check_circle</span>
         `;
+        li.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                li.click();
+            }
+        });
 
         li.addEventListener("click", () => {
             document.querySelectorAll("#peer-list li").forEach(el => el.classList.remove("selected"));
@@ -93,10 +105,15 @@ export function updatePeerListUI() {
 function renderSelectedPeer(peer) {
     receiverSelect.value = peer.id;
 
-    document.getElementById("selected-peer-name").textContent = peer.user_name
-    document.getElementById("selected-peer-status").textContent = `Port ${peer.port} ${peer.id}`;
+    document.getElementById("selected-peer-name").textContent = peer.user_name || "Peer";
+    document.getElementById("selected-peer-status").textContent = `Port ${peer.port}`;
+
+    const avatar = document.getElementById("selected-peer-avatar");
+    avatar.setAttribute("style", avatarStyle(peer));
+    avatar.textContent = initialsOf(peer.user_name || "Peer");
 
     const card = document.getElementById("selected-peer-card")
+    card.classList.remove("empty-state");
     card.classList.add("active");
     document.getElementById("clear-selection").style.display = "flex";
 }
