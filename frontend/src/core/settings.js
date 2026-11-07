@@ -21,6 +21,8 @@ async function loadSettings() {
 
         // Populate inputs
         userName.value = settings.user_name || '';
+        const me = document.getElementById("my-device-name");
+        if (me) me.textContent = settings.user_name || 'This device';
         downloadPath.value = settings.download_path || '/home/user/Downloads';
         permissionRequired.checked = settings.is_permission_required_to_send_files;
 

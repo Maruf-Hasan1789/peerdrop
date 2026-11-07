@@ -1,8 +1,7 @@
 import { EventsOn } from "../../wailsjs/runtime";
-import { showToast } from "../utils/utils";
+import { formatBytes, showToast } from "../utils/utils";
+import { createTransferRow, markRowFailed, refreshTransfersPanel, removeRowAnimated, setRowProgress } from "./transfersPanel";
 import { ReceiveFilePermission } from "../../wailsjs/go/app/App";
-const receiveListEl = document.getElementById("receive-list");
-const receiveCountEl = document.getElementById("receive-count");
 const receivingTransfers = new Map();
 
 
@@ -189,9 +188,9 @@ EventsOn("receiving-progress", (payload) => {
 
     console.log("Received " + received + " Total " + total)
 
-    const progress = (received / total) * 100;
+    const progress = total > 0 ? (received / total) * 100 : 0;
 
-    updateReceiveProgress(key, progress);
+    updateReceiveProgress(key, progress, `${formatBytes(received)} of ${formatBytes(total)}`);
 });
 
 EventsOn("file-received", (payload) => {
@@ -201,10 +200,10 @@ EventsOn("file-received", (payload) => {
     if (receivingTransfers.has(key)) {
         updateReceiveProgress(key, 100);
 
-        // Optional: auto-remove after completion
+        // Keep the "Done" state visible briefly, then remove
         setTimeout(() => {
             removeReceiveCard(key);
-        }, 1000);
+        }, 2500);
     }
 });
 
@@ -212,8 +211,12 @@ EventsOn("receiving-failed", (payload) => {
     // payload: { peerId, fileId, fileName }
     console.log("Receiving Failed", payload);
 
-    const key = payload.Id;
-    removeReceiveCard(key);
+    const key = payload.Id ?? payload.id;
+    const transfer = receivingTransfers.get(key);
+    if (transfer) {
+        receivingTransfers.delete(key);
+        markRowFailed(transfer.el, "Sender disconnected");
+    }
 
     showToast(
         `File transfer failed`,
@@ -226,55 +229,34 @@ EventsOn("receiving-failed", (payload) => {
 function createReceiveCard(key, fileName) {
     if (receivingTransfers.has(key)) return;
 
-    const card = document.createElement("div");
-    card.classList.add("transfer-card");
+    const card = createTransferRow(fileName, "receive");
     card.dataset.key = key;
-
-    card.innerHTML = `
-        <div class="transfer-info">
-            <span class="file-label">${fileName}</span>
-            <span class="status-label">Receiving… 0%</span>
-        </div>
-        <div class="progress-container">
-            <div class="progress-bar" style="width: 0"></div>
-        </div>
-    `;
-
-    if (receiveListEl) receiveListEl.appendChild(card);
 
     receivingTransfers.set(key, {
         el: card,
-        bar: card.querySelector(".progress-bar"),
-        label: card.querySelector(".status-label"),
         lastProgress: 0
     });
 
     updateReceiveCount();
 }
 
-function updateReceiveProgress(key, progress) {
+function updateReceiveProgress(key, progress, detail) {
     const transfer = receivingTransfers.get(key);
     if (!transfer) return;
 
     transfer.lastProgress = progress;
-    transfer.bar.style.width = `${progress}%`;
-    transfer.label.textContent =
-        progress >= 100
-            ? "Completed"
-            : `Receiving… ${Math.floor(progress)}%`;
+    setRowProgress(transfer.el, progress, detail);
 }
 
 function removeReceiveCard(key) {
     const transfer = receivingTransfers.get(key);
     if (!transfer) return;
 
-    transfer.el.remove();
     receivingTransfers.delete(key);
+    removeRowAnimated(transfer.el);
     updateReceiveCount();
 }
 
 function updateReceiveCount() {
-    if (receiveCountEl) {
-        receiveCountEl.textContent = receivingTransfers.size.toString();
-    }
+    refreshTransfersPanel();
 }
